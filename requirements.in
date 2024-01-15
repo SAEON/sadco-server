@@ -1,0 +1,13 @@
+-e file:../odp-core
+
+sqlalchemy
+psycopg2
+fastapi
+starlette
+
+# testing
+pytest
+coverage
+
+# deployment
+uvicorn
