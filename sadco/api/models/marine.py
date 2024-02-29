@@ -16,6 +16,20 @@ class SurveyListItemModel(BaseModel):
     survey_type: str
 
 
+class SedimentPollutionModel(BaseModel):
+    record_count: int
+
+
+class SedimentChemistryModel(BaseModel):
+    record_count: int
+
+
+class SedimentModel(BaseModel):
+    record_count: int
+    sediment_pollution: Optional[SedimentPollutionModel]
+    sediment_chemistry: Optional[SedimentChemistryModel]
+
+
 class WaterPollutionModel(BaseModel):
     record_count: int
 
@@ -40,8 +54,19 @@ class WaterModel(BaseModel):
     water_nutrients: Optional[WaterNutrientsModel]
 
 
+class CurrentsModel(BaseModel):
+    record_count: int
+
+
+class WeatherModel(BaseModel):
+    record_count: int
+
+
 class DataTypesModel(BaseModel):
     water: Optional[WaterModel]
+    sediment: Optional[SedimentModel]
+    weather: Optional[WeatherModel]
+    currents: Optional[CurrentsModel]
 
 
 class StationModel(BaseModel):

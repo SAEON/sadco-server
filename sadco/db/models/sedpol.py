@@ -1,12 +1,14 @@
-from sqlalchemy import Column, Numeric, ForeignKey
+from sqlalchemy import Column, Numeric, Integer, ForeignKey
+from sqlalchemy.orm import relationship
 
 from sadco.db import Base
+from sadco.db.models import Sedphy
 
 
 class Sedpol1(Base):
     __tablename__ = 'sedpol1'
 
-    sedphy_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.sedphy.code'), primary_key=True)
+    sedphy_code = Column(Integer, ForeignKey('sadco.sedphy.code'), primary_key=True)
     arsenic = Column(Numeric(precision=7, scale=3))
     cadmium = Column(Numeric(precision=6, scale=3))
     chromium = Column(Numeric(precision=8, scale=3))
@@ -20,11 +22,13 @@ class Sedpol1(Base):
     selenium = Column(Numeric(precision=7, scale=3))
     zinc = Column(Numeric(precision=7, scale=3))
 
+    sedphy = relationship(Sedphy, uselist=False)
+
 
 class Sedpol2(Base):
     __tablename__ = 'sedpol2'
 
-    sedphy_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.sedphy.code'), primary_key=True)
+    sedphy_code = Column(Integer, ForeignKey('sadco.sedphy.code'), primary_key=True)
     aluminium = Column(Numeric(precision=5, scale=0))
     antimony = Column(Numeric(precision=7, scale=3))
     bismuth = Column(Numeric(precision=3, scale=1))
@@ -32,4 +36,6 @@ class Sedpol2(Base):
     silver = Column(Numeric(precision=7, scale=3))
     titanium = Column(Numeric(precision=4, scale=0))
     vanadium = Column(Numeric(precision=4, scale=2))
+
+    sedphy = relationship('Sedphy', uselist=False)
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey
+from sqlalchemy import Column, Numeric, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 from sadco.db import Base
@@ -7,9 +7,9 @@ from sadco.db import Base
 class Sedphy(Base):
     __tablename__ = 'sedphy'
 
-    code = Column(Numeric(precision=38, scale=0), primary_key=True)
+    code = Column(Integer, primary_key=True)
     station_id = Column(String(12), ForeignKey('sadco.station.station_id'), nullable=False)
-    device_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.sampling_device.code'), nullable=False)
+    device_code = Column(Integer, nullable=False)
     method_code = Column(Numeric(precision=38, scale=0), nullable=False)
     standard_code = Column(Numeric(precision=38, scale=0), nullable=False)
     subdes = Column(String(5))
@@ -29,7 +29,9 @@ class Sedphy(Base):
     dwf = Column(Numeric(precision=7, scale=4))
     cod = Column(Numeric(precision=5, scale=3))
 
-    sedpol1_list = relationship('Sedpol1')
-    sedpol2_list = relationship('Sedpol2')
-    sedchem1_list = relationship('Sedchem1')
-    sedchem2_list = relationship('Sedchem2')
+    sedpol1 = relationship('Sedpol1', uselist=False)
+    sedpol2 = relationship('Sedpol2', uselist=False)
+    sedchem1 = relationship('Sedchem1', uselist=False)
+    sedchem2 = relationship('Sedchem2', uselist=False)
+    station = relationship('Station')
+

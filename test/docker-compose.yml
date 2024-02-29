@@ -1,0 +1,10 @@
+services:
+  sadco-db:
+    container_name: TEST-sadco-db
+    image: postgres:14
+    ports:
+      - "7357:5432"
+    environment:
+      - POSTGRES_USER=${SADCO_DB_USER}
+      - POSTGRES_PASSWORD=${SADCO_DB_PASS}
+    restart: always

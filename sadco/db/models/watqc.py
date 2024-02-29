@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Numeric, ForeignKey
+from sqlalchemy import Column, Numeric, Integer, ForeignKey
 
 from sadco.db import Base
 
@@ -6,7 +6,7 @@ from sadco.db import Base
 class Watqc(Base):
     __tablename__ = 'watqc'
 
-    watphy_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.watphy.code'), primary_key=True, nullable=False)
+    watphy_code = Column(Integer, ForeignKey('sadco.watphy.code'), primary_key=True, nullable=False)
     spldep = Column(Numeric(precision=38, scale=0))
     disoxygen = Column(Numeric(precision=38, scale=0))
     salinity = Column(Numeric(precision=38, scale=0))

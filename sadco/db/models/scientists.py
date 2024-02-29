@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Numeric, String
+from sqlalchemy.orm import relationship
 
 from sadco.db import Base
 

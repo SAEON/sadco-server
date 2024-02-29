@@ -1,0 +1,406 @@
+from datetime import datetime
+from random import randint, uniform, choice
+
+import factory
+from factory.alchemy import SQLAlchemyModelFactory
+from faker import Faker
+
+from sadco.db import Session
+from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
+    SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
+    Sedpol1, Sedpol2
+
+fake = Faker()
+
+
+class SADCOModelFactory(SQLAlchemyModelFactory):
+    class Meta:
+        sqlalchemy_session = Session
+        sqlalchemy_session_persistence = 'commit'
+
+
+class ScientistsFactory(SADCOModelFactory):
+    class Meta:
+        model = Scientists
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    surname = factory.Sequence(lambda n: f'{fake.name()[:18]}.{n}')
+    f_name = factory.Sequence(lambda n: f'{fake.name()[:18]}.{n}')
+    title = fake.random_element(elements=('Mrs', 'Ms', 'Dr', 'Mr'))
+    instit_code = fake.random_number(digits=randint(0, 37))
+
+
+class InstitutesFactory(SADCOModelFactory):
+    class Meta:
+        model = Institutes
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    name = factory.LazyFunction(lambda: fake.company())
+    address = factory.LazyFunction(lambda: fake.address()[:50])
+
+
+class PlanamFactory(SADCOModelFactory):
+    class Meta:
+        model = Planam
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    name = factory.LazyFunction(lambda: fake.name())
+    platform_code = factory.LazyFunction(lambda: fake.random_number(digits=randint(0, 38)))
+    callsign = ''.join(fake.random_uppercase_letter() for _ in range(0, randint(0, 7)))
+    nodc_country_code = ''.join(fake.random_uppercase_letter() for _ in range(0, randint(0, 2)))
+    nodc_ship_code = ''.join(fake.random_uppercase_letter() for _ in range(0, randint(0, 2)))
+    wod_code = factory.LazyFunction(lambda: fake.random_number(digits=randint(0, 38)))
+
+
+class SurveyTypeFactory(SADCOModelFactory):
+    class Meta:
+        model = SurveyType
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    name = factory.LazyFunction(
+        lambda: choice(('Unknown', 'Hydro', 'Weather', 'UTR', 'VOS', 'Waves', 'Currents', 'Echo-Sounding'))
+    )
+    description = fake.text(max_nb_chars=100)
+
+
+class SamplingDeviceFactory(SADCOModelFactory):
+    class Meta:
+        model = SamplingDevice
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    name = factory.LazyFunction(lambda: fake.name())
+
+
+class StatusModeFactory(SADCOModelFactory):
+    class Meta:
+        model = StatusMode
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    flagging = factory.Faker('random_element', elements=('closed', 'open'))
+    quality = factory.Faker('random_element',
+                            elements=('unchecked', 'checked', 'bad', 'unknown', 'good', 'bad', 'unknown', 'good'))
+
+
+class Sedpol1Factory(SADCOModelFactory):
+    class Meta:
+        model = Sedpol1
+
+    arsenic = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    cadmium = factory.LazyFunction(lambda: uniform(0, 999.999))
+    chromium = factory.LazyFunction(lambda: uniform(0, 99999.999))
+    cobalt = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    copper = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    iron = factory.LazyFunction(lambda: uniform(0, 999999.999))
+    lead = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    manganese = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    mercury = factory.LazyFunction(lambda: uniform(0, 999.9999))
+    nickel = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    selenium = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    zinc = factory.LazyFunction(lambda: uniform(0, 9999.999))
+
+    sedphy = factory.SubFactory('factories.SedphyFactory', sedpol1=None)
+
+
+class Sedpol2Factory(SADCOModelFactory):
+    class Meta:
+        model = Sedpol2
+
+    aluminium = factory.Faker('random_number', digits=5)
+    antimony = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    bismuth = factory.LazyFunction(lambda: uniform(0, 99.9))
+    molybdenum = factory.LazyFunction(lambda: uniform(0, 99.9))
+    silver = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    titanium = factory.Faker('random_number', digits=4)
+    vanadium = factory.LazyFunction(lambda: uniform(0, 99.99))
+
+    sedphy = factory.SubFactory('factories.SedphyFactory', sedpol2=None)
+
+
+class Sedchem1Factory(SADCOModelFactory):
+    class Meta:
+        model = Sedchem1
+
+    fluoride = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    kjn = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    oxa = factory.LazyFunction(lambda: uniform(0, 999.999))
+    toc = factory.LazyFunction(lambda: uniform(0, 999.999))
+    ptot = factory.LazyFunction(lambda: uniform(0, 999.999))
+
+    sedphy = factory.SubFactory('factories.SedphyFactory', sedchem1=None)
+
+
+class Sedchem2Factory(SADCOModelFactory):
+    class Meta:
+        model = Sedchem2
+
+    calcium = factory.LazyFunction(lambda: uniform(0, 999999.999))
+    magnesium = factory.LazyFunction(lambda: uniform(0, 99999.99))
+    potassium = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    sodium = factory.LazyFunction(lambda: uniform(0, 99999.99))
+    strontium = factory.LazyFunction(lambda: uniform(0, 99999.999))
+    so3 = factory.LazyFunction(lambda: uniform(0, 999.999))
+
+    sedphy = factory.SubFactory('factories.SedphyFactory', sedchem2=None)
+
+
+class SedphyFactory(SADCOModelFactory):
+    class Meta:
+        model = Sedphy
+
+    code = factory.Faker('random_number', digits=randint(1, 8))
+    device_code = factory.Faker('random_number', digits=randint(1, 8))
+    method_code = factory.Faker('random_number', digits=randint(1, 8))
+    standard_code = factory.Faker('random_number', digits=randint(1, 8))
+    subdes = factory.Faker('text', max_nb_chars=5)
+    spldattim = factory.Faker('date_time')
+    spldep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    spldis = factory.Faker('random_number', digits=randint(1, 38))
+    splvol = factory.LazyFunction(lambda: uniform(0, 999.9))
+    sievsz = factory.LazyFunction(lambda: uniform(0, 999999.9))
+    kurt = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    skew = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    meanpz = factory.Faker('random_number', digits=randint(1, 38))
+    medipz = factory.Faker('random_number', digits=randint(1, 38))
+    pctsat = factory.LazyFunction(lambda: uniform(0, 99.9))
+    pctsil = factory.LazyFunction(lambda: uniform(0, 99.9))
+    permty = factory.Faker('random_number', digits=randint(1, 38))
+    porsty = factory.LazyFunction(lambda: uniform(0, 99.9))
+    dwf = factory.LazyFunction(lambda: uniform(0, 999.9999))
+    cod = factory.LazyFunction(lambda: uniform(0, 99.999))
+
+    station = factory.SubFactory('factories.StationFactory', sedphy_list=None)
+    sedchem1 = factory.RelatedFactory(Sedchem1Factory, factory_related_name='sedphy')
+    sedchem2 = factory.RelatedFactory(Sedchem2Factory, factory_related_name='sedphy')
+    sedpol1 = factory.RelatedFactory(Sedpol1Factory, factory_related_name='sedphy')
+    sedpol2 = factory.RelatedFactory(Sedpol2Factory, factory_related_name='sedphy')
+
+
+class WatcurrentsFactory(SADCOModelFactory):
+    class Meta:
+        model = Watcurrents
+
+    current_dir = factory.Faker('random_number', digits=randint(1, 38))
+    current_speed = factory.LazyFunction(lambda: round(uniform(0, 99.99), 2))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', wacurrents=None)
+
+
+class WatchlFactory(SADCOModelFactory):
+    class Meta:
+        model = Watchl
+
+    chla = factory.LazyFunction(lambda: uniform(0, 999.999))
+    chlb = factory.LazyFunction(lambda: uniform(0, 999.999))
+    chlc = factory.LazyFunction(lambda: uniform(0, 999.999))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', watchl=None)
+
+
+class Watpol1Factory(SADCOModelFactory):
+    class Meta:
+        model = Watpol1
+
+    arsenic = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    cadmium = factory.LazyFunction(lambda: uniform(0, 999.999))
+    chromium = factory.LazyFunction(lambda: uniform(0, 99999.999))
+    cobalt = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    copper = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    iron = factory.LazyFunction(lambda: uniform(0, 999999.999))
+    lead = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    manganese = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    mercury = factory.LazyFunction(lambda: uniform(0, 999.9999))
+    nickel = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    selenium = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    zinc = factory.LazyFunction(lambda: uniform(0, 9999.999))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', watpol1=None)
+
+
+class Watpol2Factory(SADCOModelFactory):
+    class Meta:
+        model = Watpol2
+
+    aluminium = factory.LazyFunction(lambda: randint(0, 99999))
+    antimony = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    bismuth = factory.LazyFunction(lambda: uniform(0, 99.9))
+    molybdenum = factory.LazyFunction(lambda: uniform(0, 99.9))
+    silver = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    titanium = factory.LazyFunction(lambda: randint(0, 9999))
+    vanadium = factory.LazyFunction(lambda: uniform(0, 99.99))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', watpol2=None)
+
+
+class Watchem1Factory(SADCOModelFactory):
+    class Meta:
+        model = Watchem1
+
+    dic = factory.LazyFunction(lambda: round(uniform(0, 999999.999), 3))
+    doc = factory.LazyFunction(lambda: round(uniform(0, 9999.99), 2))
+    fluoride = factory.LazyFunction(lambda: round(uniform(0, 9999.999), 3))
+    iodene = factory.LazyFunction(lambda: round(uniform(0, 999.999), 3))
+    iodate = factory.LazyFunction(lambda: round(uniform(0, 999.999), 3))
+    kjn = factory.LazyFunction(lambda: round(uniform(0, 9999.99), 2))
+    nh3 = factory.LazyFunction(lambda: round(uniform(0, 999.99), 2))
+    nitrogen = factory.LazyFunction(lambda: round(uniform(0, 9999.99), 2))
+    oxa = factory.LazyFunction(lambda: round(uniform(0, 999.999), 3))
+    ph = factory.LazyFunction(lambda: round(uniform(0, 99.99), 2))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', watchem1=None)
+
+
+class Watchem2Factory(SADCOModelFactory):
+    class Meta:
+        model = Watchem2
+
+    calcium = factory.LazyFunction(lambda: uniform(0, 999999.999))
+    cesium = factory.LazyFunction(lambda: uniform(0, 999.999))
+    hydrocarbons = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    magnesium = factory.LazyFunction(lambda: uniform(0, 99999.99))
+    pah = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    potassium = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    rubidium = factory.LazyFunction(lambda: uniform(0, 999.999))
+    sodium = factory.LazyFunction(lambda: uniform(0, 99999.99))
+    strontium = factory.LazyFunction(lambda: uniform(0, 99999.999))
+    so4 = factory.LazyFunction(lambda: uniform(0, 99.9999))
+    sussol = factory.LazyFunction(lambda: uniform(0, 999.999))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', watchem2=None)
+
+
+class WatnutFactory(SADCOModelFactory):
+    class Meta:
+        model = Watnut
+
+    no2 = factory.LazyFunction(lambda: uniform(0, 999.99))
+    no3 = factory.LazyFunction(lambda: uniform(0, 999.99))
+    p = factory.LazyFunction(lambda: uniform(0, 999.999))
+    po4 = factory.LazyFunction(lambda: uniform(0, 999.99))
+    ptot = factory.LazyFunction(lambda: uniform(0, 999.999))
+    sio3 = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    sio4 = factory.LazyFunction(lambda: uniform(0, 9999.99))
+
+    watphy = factory.SubFactory('factories.WatphyFactory', watnut=None)
+
+
+class WatphyFactory(SADCOModelFactory):
+    class Meta:
+        model = Watphy
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    method_code = factory.Faker('random_number', digits=randint(1, 38))
+    standard_code = factory.Faker('random_number', digits=randint(1, 38))
+    subdes = factory.Faker('lexify', text='?????')
+    spldattim = factory.Faker('date')
+    spldep = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    filtered = factory.Faker('random_element', elements=('Y', 'N'))
+    disoxygen = factory.LazyFunction(lambda: uniform(0, 99.99))
+    salinity = factory.LazyFunction(lambda: uniform(0, 99.99))
+    temperature = factory.LazyFunction(lambda: uniform(0, 99.99))
+    sound_flag = factory.Faker('random_element', elements=('Y', 'N'))
+    soundv = factory.LazyFunction(lambda: uniform(0, 9999.9))
+    turbidity = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    pressure = factory.LazyFunction(lambda: uniform(0, 99999.99))
+    fluorescence = factory.LazyFunction(lambda: uniform(0, 9999.9999))
+
+    station = factory.SubFactory('factories.StationFactory', watphy_list=None)
+    sampling_device = factory.SubFactory(SamplingDeviceFactory)
+    watnut = factory.RelatedFactory(WatnutFactory, factory_related_name='watphy')
+    watchem1 = factory.RelatedFactory(Watchem1Factory, factory_related_name='watphy')
+    watchem2 = factory.RelatedFactory(Watchem2Factory, factory_related_name='watphy')
+    watpol1 = factory.RelatedFactory(Watpol1Factory, factory_related_name='watphy')
+    watpol2 = factory.RelatedFactory(Watpol2Factory, factory_related_name='watphy')
+    watchl = factory.RelatedFactory(WatchlFactory, factory_related_name='watphy')
+    watcurrents = factory.RelatedFactory(WatcurrentsFactory, factory_related_name='watphy')
+
+
+class StationFactory(SADCOModelFactory):
+    class Meta:
+        model = Station
+
+    station_id = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 11))}{n}')
+    latitude = factory.Faker('latitude')
+    longitude = factory.Faker('longitude')
+    date_start = factory.Faker('date')
+    date_end = factory.Faker('date')
+    daynull = factory.Faker('random_element', elements=('Y', 'N'))
+    stnnam = factory.Sequence(lambda n: f'{fake.city()[:9]}{n}')
+    stndep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    offshd = factory.LazyFunction(lambda: uniform(0, 999.999))
+    passkey = factory.Faker('random_number', digits=randint(0, 8))
+    dupflag = factory.Faker('random_element', elements=('Y', 'N'))
+    max_spldep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    lat = factory.Faker('latitude')
+    lon = factory.Faker('longitude')
+    yearmon = fake.month() + "-" + str(fake.year())
+    status_code = factory.SelfAttribute('status_mode.code')
+    stn_ref = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
+    notes = factory.Faker('text', max_nb_chars=2000)
+
+    status_mode = factory.SubFactory(StatusModeFactory)
+    watphy_list = factory.RelatedFactory(WatphyFactory, factory_related_name='station')
+    sedphy_list = factory.RelatedFactory(SedphyFactory, factory_related_name='station')
+    survey = factory.SubFactory('factories.SurveyFactory', stations=None)
+
+
+class SurveyFactory(SADCOModelFactory):
+    class Meta:
+        model = Survey
+
+    survey_id = factory.SelfAttribute('inventory.survey_id')
+    institute = factory.Sequence(lambda n: f'{fake.company()[:5]}.{n}')
+    prjnam = factory.Sequence(lambda n: f'{fake.company()[:8]}.{n}')
+    expnam = factory.Sequence(lambda n: f'{fake.company()[:8]}.{n}')
+    planam = factory.Sequence(lambda n: f'{fake.company()[:8]}.{n}')
+    notes_1 = factory.Faker('text', max_nb_chars=198)
+    notes_2 = factory.Faker('text', max_nb_chars=38)
+    notes_3 = factory.Faker('text', max_nb_chars=38)
+    notes_4 = factory.Faker('text', max_nb_chars=38)
+
+    planam_relation = None
+    institute_relation = None
+    inventory = factory.SubFactory('factories.InventoryFactory', survey=None)
+    stations = factory.RelatedFactory(StationFactory, factory_related_name='survey')
+
+
+class InventoryFactory(SADCOModelFactory):
+    class Meta:
+        model = Inventory
+
+    data_centre = factory.LazyFunction(lambda: choice(('SADCO', 'DFFE')))
+    survey_id = factory.Faker('lexify', text='?????????', letters='ABCDEFGHIJKLMNOP')
+    project_name = factory.Sequence(lambda n: f'{fake.company()}.{n}')
+    cruise_name = factory.Sequence(lambda n: f'{fake.name()}.{n}')
+    national_pgm = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    exchange_restrict = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    coop_pgm = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    coordinated_int = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    port_start = factory.Sequence(lambda n: f'{fake.city()[:18]}.{n}')
+    port_end = factory.Sequence(lambda n: f'{fake.city()[:18]}.{n}')
+    country_code = factory.Faker('random_number', digits=randint(1, 38))
+    coord_code = factory.Faker('random_number', digits=randint(1, 38))
+    date_start = factory.Faker('date')
+    date_end = factory.Faker('date')
+    lat_north = factory.Sequence(lambda n: f'{fake.latitude() + n}')
+    lat_south = factory.Sequence(lambda n: f'{fake.latitude() + n}')
+    long_west = factory.Sequence(lambda n: f'{fake.longitude() + n}')
+    long_east = factory.Sequence(lambda n: f'{fake.longitude() + n}')
+    areaname = factory.LazyFunction(lambda: fake.word()[:50])
+    domain = factory.Faker('lexify', text='??????????', letters='ABCDEFGHIJKLMNOP')
+    track_chart = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    target_country_code = factory.LazyFunction(lambda: randint(0, 50))
+    stnid_prefix = factory.Faker('lexify', text='???', letters='ABCDE')
+    gmt_diff = factory.LazyFunction(lambda: randint(-12, 12))
+    gmt_freeze = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    projection_code = factory.Faker('random_number', digits=randint(1, 38))
+    spheroid_code = factory.Faker('random_number', digits=randint(1, 38))
+    datum_code = factory.Faker('random_number', digits=randint(1, 38))
+    data_recorded = factory.LazyFunction(lambda: choice(('Y', 'N')))
+    data_available = factory.LazyFunction(lambda: choice(('Y', 'N')))
+
+    survey = factory.RelatedFactory(SurveyFactory, factory_related_name='inventory')
+    planam_relation = factory.SubFactory(PlanamFactory)
+    institute = factory.SubFactory(InstitutesFactory)
+    survey_type = factory.SubFactory(SurveyTypeFactory)
+    scientist_1 = factory.SubFactory(ScientistsFactory)
+    scientist_2 = factory.SubFactory(ScientistsFactory)

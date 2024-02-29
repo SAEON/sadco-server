@@ -1,11 +1,14 @@
-from sqlalchemy import Column, Numeric, String, ForeignKey, TIMESTAMP
+from sqlalchemy import Column, Numeric, Integer, ForeignKey, TIMESTAMP
+from sqlalchemy.orm import relationship
 
 from sadco.db import Base
+from sadco.db.models import Watphy
+
 
 class Watpol1(Base):
     __tablename__ = 'watpol1'
 
-    watphy_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.watphy.code'), primary_key=True)
+    watphy_code = Column(Integer, ForeignKey('sadco.watphy.code'), primary_key=True)
     arsenic = Column(Numeric(precision=7, scale=3))
     cadmium = Column(Numeric(precision=6, scale=3))
     chromium = Column(Numeric(precision=8, scale=3))
@@ -19,11 +22,13 @@ class Watpol1(Base):
     selenium = Column(Numeric(precision=7, scale=3))
     zinc = Column(Numeric(precision=7, scale=3))
 
+    watphy = relationship(Watphy, uselist=False)
+
 
 class Watpol2(Base):
     __tablename__ = 'watpol2'
 
-    watphy_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.watphy.code'), primary_key=True)
+    watphy_code = Column(Integer, ForeignKey('sadco.watphy.code'), primary_key=True)
     aluminium = Column(Numeric(precision=5, scale=0))
     antimony = Column(Numeric(precision=7, scale=3))
     bismuth = Column(Numeric(precision=3, scale=1))
@@ -31,3 +36,5 @@ class Watpol2(Base):
     silver = Column(Numeric(precision=7, scale=3))
     titanium = Column(Numeric(precision=4, scale=0))
     vanadium = Column(Numeric(precision=4, scale=2))
+
+    watphy = relationship(Watphy, uselist=False)

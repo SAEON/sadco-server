@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Numeric, String, ForeignKey, TIMESTAMP
+from sqlalchemy import Column, Numeric, String, Integer, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship
 
 from sadco.db import Base
@@ -8,10 +8,10 @@ class Watphy(Base):
 
     __tablename__ = 'watphy'
 
-    code = Column(Numeric(precision=38, scale=0), primary_key=True, nullable=False)
+    code = Column(Integer, primary_key=True, nullable=False)
 
-    station_id = Column(String(12), ForeignKey('sadco.station.station_id', ondelete='CASCADE'), nullable=False)
-    device_code = Column(Numeric(precision=38, scale=0), ForeignKey('sadco.sampling_device.code'), nullable=False)
+    station_id = Column(String(12), ForeignKey('sadco.station.station_id'), nullable=False)
+    device_code = Column(Integer, ForeignKey('sadco.sampling_device.code'), nullable=False)
 
     method_code = Column(Numeric(precision=38, scale=0), nullable=False)
     standard_code = Column(Numeric(precision=38, scale=0), nullable=False)
@@ -28,12 +28,16 @@ class Watphy(Base):
     pressure = Column(Numeric(precision=7, scale=2))
     fluorescence = Column(Numeric(precision=8, scale=4))
 
-    sampling_device = relationship('SamplingDevice')
-    watnut = relationship('Watnut')
-    watchem1 = relationship('Watchem1')
-    watchem2 = relationship('Watchem2')
-    watpol1 = relationship('Watpol1')
-    watpol2 = relationship('Watpol2')
-    watchl = relationship('Watchl')
+    # The primary key for the below tables are watphy_code, they all share a one-to-one relationship with watphy
+    watnut = relationship('Watnut', uselist=False)
+    watchem1 = relationship('Watchem1', uselist=False)
+    watchem2 = relationship('Watchem2', uselist=False)
+    watpol1 = relationship('Watpol1', uselist=False)
+    watpol2 = relationship('Watpol2', uselist=False)
+    watchl = relationship('Watchl', uselist=False)
+    watcurrents = relationship('Watcurrents', uselist=False)
+
+    station = relationship('Station', uselist=False)
+    sampling_device = relationship('SamplingDevice', uselist=False)
 
 

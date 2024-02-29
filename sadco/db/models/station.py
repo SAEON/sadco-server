@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Numeric, String, TIMESTAMP
+from sqlalchemy import Column, ForeignKey, Numeric, String, Integer, TIMESTAMP
 from sqlalchemy.orm import relationship
 
 from sadco.db import Base
@@ -10,7 +10,7 @@ class Station(Base):
 
     station_id = Column(String(12), primary_key=True, nullable=False)
 
-    survey_id = Column(String(9), ForeignKey('sadco.survey.survey_id'), primary_key=True, nullable=False)
+    survey_id = Column(String(9), ForeignKey('sadco.survey.survey_id'), nullable=False)
 
     latitude = Column(Numeric(precision=8, scale=5), nullable=False)
     longitude = Column(Numeric(precision=8, scale=5), nullable=False)
@@ -26,10 +26,14 @@ class Station(Base):
     lat = Column(Numeric(precision=38, scale=0))
     lon = Column(Numeric(precision=38, scale=0))
     yearmon = Column(String(7))
-    status_code = Column(Numeric(precision=38, scale=0), nullable=False)
+    status_code = Column(Integer, ForeignKey('sadco.status_mode.code'), nullable=False)
     stn_ref = Column(String(5))
     notes = Column(String(2000))
 
-    # view of associated watphy entries (one-to-many)
+    # view of associated watphy, sedphy and current entries (one-to-many)
     watphy_list = relationship('Watphy')
     sedphy_list = relationship('Sedphy')
+    currents = relationship('Currents')
+
+    survey = relationship('Survey')
+    status_mode = relationship('StatusMode')

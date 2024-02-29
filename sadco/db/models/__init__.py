@@ -14,3 +14,7 @@ from .sedphy import Sedphy
 from .sedpol import Sedpol1, Sedpol2
 from .sedchem import Sedchem1, Sedchem2
 from .watchl import Watchl
+from .watcurrents import Watcurrents
+from .currents import Currents
+from .weather import Weather
+from .status_mode import StatusMode

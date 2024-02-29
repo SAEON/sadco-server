@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import load_only, joinedload
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY
 
 from sadco.api.lib.paging import Page, Paginator
 from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
-                             Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2)
+                             Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
+                             Weather, Currents)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
-                              DataTypesModel)
+                              DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
+                              CurrentsModel, WeatherModel)
 
 from sadco.db import Session
 from sadco.db.models import Survey, Station
@@ -71,7 +73,8 @@ async def get_survey(
         project_name=result.Inventory.project_name,
         station_name=result.Inventory.cruise_name,
         platform_name=result.Inventory.planam.name,
-        chief_scientist=(result.Inventory.scientist_1.f_name + ' ' + result.Inventory.scientist_1.surname),
+        chief_scientist=(
+                result.Inventory.scientist_1.f_name.strip() + ' ' + result.Inventory.scientist_1.surname.strip()),
         institute=result.Inventory.institute.name,
         date_start=result.Inventory.date_start,
         date_end=result.Inventory.date_end,
@@ -86,98 +89,158 @@ async def get_survey(
                 longitude=station.longitude
             ) for station in result.Inventory.survey.stations
         ],
-        data_types=get_data_types(result.Inventory)
+        data_types=get_data_types(result.Inventory.survey_id)
     )
 
 
-def get_data_types(inventory: Inventory) -> DataTypesModel:
+def get_data_types(survey_id: str) -> DataTypesModel:
     data_types_model = DataTypesModel()
 
-    # stmt = (
-    #     select(
-    #         func.count(Watphy.code).label('water_count'),
-    #         func.count(Watnut.watphy_code).label('nutrients_count'),
-    #         func.count(Watpol1.watphy_code).label('pollution_count')
-    #     ).
-    #     select_from(Survey).
-    #     join(Station).
-    #     outerjoin(Watphy).
-    #     outerjoin(Watnut).
-    #     outerjoin(Watpol1).
-    #     where(Survey.survey_id == inventory.survey_id)
-    # )
-    #
-    # result = Session.execute(stmt).one_or_none()
-    #
-    # if result.water_count > 0:
-    #     water_model = WaterModel(
-    #         record_count=result.water_count
-    #     )
-    #
-    #     water_model.water_chemistry = get_water_chemistry_model(inventory)
-    #
-    #     if result.nutrients_count > 0:
-    #         water_model.water_nutrients = WaterNutrientsModel(
-    #             record_count=result.nutrients_count
-    #         )
+    stmt = (
+        select(
+            func.count(Currents.station_id).label('currents_count'),
+            func.count(Weather.station_id).label('weather_count')
+        ).
+        select_from(Survey).
+        join(Station).
+        outerjoin(Currents).
+        outerjoin(Weather).
+        where(Survey.survey_id == survey_id)
+    )
 
-        # data_types_model.water = water_model
+    result = Session.execute(stmt).one_or_none()
 
-    data_types_model.water = get_water_model2(inventory)
+    if result.currents_count > 0:
+        data_types_model.currents = CurrentsModel(
+            record_count=result.currents_count
+        )
+
+    if result.weather_count > 0:
+        data_types_model.weather = WeatherModel(
+            record_count=result.weather_count
+        )
+
+    water_model = get_water_model(survey_id)
+
+    if water_model.record_count > 0:
+        data_types_model.water = water_model
+
+    sediment_model = get_sediment_model(survey_id)
+
+    if sediment_model.record_count > 0:
+        data_types_model.sediment = sediment_model
 
     return data_types_model
 
 
-def get_water_chemistry_model(inventory: Inventory) -> WaterChemistryModel:
+def get_water_model(survey_id: str) -> WaterModel:
     stmt = (
         select(
-            func.count(Watphy.code)
+            func.count(Watphy.code).label('water_count'),
+            func.count(Watnut.watphy_code).label('nutrients_count'),
+            func.count(Watcurrents.watphy_code).label('currents_count')
         ).
         select_from(Survey).
         join(Station).
         join(Watphy).
-        outerjoin(Watchem1).
-        outerjoin(Watchem2).
-        where(Survey.survey_id == inventory.survey_id)
+        outerjoin(Watnut).
+        outerjoin(Watcurrents).
+        where(Survey.survey_id == survey_id)
     )
 
-    result = Session.execute(stmt).scalar()
+    result = Session.execute(stmt).one_or_none()
 
-    if result > 0:
-        return WaterChemistryModel(
-            record_count=result
-        )
+    water_model = WaterModel(
+        record_count=0
+    )
 
-    return WaterChemistryModel()
+    if result.water_count > 0:
+        water_model.record_count = result.water_count
+
+        water_chemistry_count = get_watphy_joined_count(Watchem1, Watchem2, survey_id)
+        if water_chemistry_count > 0:
+            water_model.water_chemistry = WaterChemistryModel(
+                record_count=water_chemistry_count
+            )
+
+        water_pollution_count = get_watphy_joined_count(Watpol1, Watpol2, survey_id)
+        if water_pollution_count > 0:
+            water_model.water_pollution = WaterPollutionModel(
+                record_count=water_pollution_count
+            )
+
+        if result.nutrients_count > 0:
+            water_model.water_nutrients = WaterNutrientsModel(
+                record_count=result.nutrients_count
+            )
+
+        if result.currents_count > 0:
+            water_model.water_currents = WaterCurrentsModel(
+                record_count=result.currents_count
+            )
+
+    return water_model
 
 
-def get_water_model2(inventory: Inventory) -> WaterModel:
-    water_count = 0
-    water_chemistry_count = 0
-    water_pollution_count = 0
-    water_nutrients_count = 0
+def get_sediment_model(survey_id: str) -> SedimentModel:
+    stmt = (
+        select(
+            func.count(Sedphy.code)
+        ).
+        select_from(Survey).
+        join(Station).
+        join(Sedphy).
+        where(Survey.survey_id == survey_id)
+    )
 
-    for station in inventory.survey.stations:
-        for watphy in station.watphy_list:
-            water_count += 1
+    sediment_count = Session.execute(stmt).scalar()
 
-            if watphy.watchem1 or watphy.watchem2:
-                water_chemistry_count += 1
+    sediment_model = SedimentModel(
+        record_count=0
+    )
 
-            if watphy.watpol1 or watphy.watpol2:
-                water_pollution_count += 1
+    if sediment_count > 0:
+        sediment_model.record_count = sediment_count
 
-            if watphy.watnut:
-                water_nutrients_count += 1
+        sediment_chemistry_count = get_sedphy_joined_count(Sedchem1, Sedchem2, survey_id)
+        if sediment_chemistry_count > 0:
+            sediment_model.sediment_chemistry = SedimentChemistryModel(
+                record_count=sediment_chemistry_count
+            )
 
-    return WaterModel(
-        water_pollution=WaterPollutionModel(
-            record_count=water_pollution_count
-        ),
-        water_chemistry=WaterChemistryModel(
-            record_count=water_chemistry_count
-        ),
-        water_nutrients=WaterNutrientsModel(
-            record_count=water_nutrients_count
+        sediment_pollution_count = get_sedphy_joined_count(Sedpol1, Sedpol2, survey_id)
+        if sediment_pollution_count > 0:
+            sediment_model.sediment_pollution = SedimentPollutionModel(
+                record_count=sediment_pollution_count
+            )
+
+    return sediment_model
+
+
+def get_watphy_joined_count(child_1, child_2, survey_id: str) -> int:
+    return get_joined_count(child_1, child_2, Watphy, 'watphy_code', survey_id)
+
+
+def get_sedphy_joined_count(child_1, child_2, survey_id: str) -> int:
+    return get_joined_count(child_1, child_2, Sedphy, 'sedphy_code', survey_id)
+
+
+def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id: str) -> int:
+    stmt = (
+        select(
+            func.count(parent_table.code)
+        ).
+        select_from(Station).
+        join(parent_table).
+        outerjoin(child_1).
+        outerjoin(child_2).
+        where(
+            and_(
+                or_(parent_table.code == getattr(child_1, foreign_key_name),
+                    parent_table.code == getattr(child_2, foreign_key_name)),
+                (Station.survey_id == survey_id)
+            )
         )
     )
+
+    return Session.execute(stmt).scalar()
