@@ -22,7 +22,7 @@ class Sedpol1(Base):
     selenium = Column(Numeric(precision=7, scale=3))
     zinc = Column(Numeric(precision=7, scale=3))
 
-    sedphy = relationship(Sedphy, uselist=False)
+    sedphy = relationship(Sedphy, uselist=False, back_populates='sedpol1')
 
 
 class Sedpol2(Base):
@@ -37,5 +37,5 @@ class Sedpol2(Base):
     titanium = Column(Numeric(precision=4, scale=0))
     vanadium = Column(Numeric(precision=4, scale=2))
 
-    sedphy = relationship('Sedphy', uselist=False)
+    sedphy = relationship('Sedphy', uselist=False, back_populates='sedpol2')
 

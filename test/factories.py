@@ -23,9 +23,9 @@ class ScientistsFactory(SADCOModelFactory):
     class Meta:
         model = Scientists
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
-    surname = factory.Sequence(lambda n: f'{fake.name()[:18]}.{n}')
-    f_name = factory.Sequence(lambda n: f'{fake.name()[:18]}.{n}')
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 7))}{n}')
+    surname = factory.LazyFunction(lambda: fake.name()[:20])
+    f_name = factory.LazyFunction(lambda: fake.name()[:20])
     title = fake.random_element(elements=('Mrs', 'Ms', 'Dr', 'Mr'))
     instit_code = fake.random_number(digits=randint(0, 37))
 
@@ -34,7 +34,7 @@ class InstitutesFactory(SADCOModelFactory):
     class Meta:
         model = Institutes
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 7))}{n}')
     name = factory.LazyFunction(lambda: fake.company())
     address = factory.LazyFunction(lambda: fake.address()[:50])
 
@@ -147,7 +147,7 @@ class SedphyFactory(SADCOModelFactory):
     class Meta:
         model = Sedphy
 
-    code = factory.Faker('random_number', digits=randint(1, 8))
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
     device_code = factory.Faker('random_number', digits=randint(1, 8))
     method_code = factory.Faker('random_number', digits=randint(1, 8))
     standard_code = factory.Faker('random_number', digits=randint(1, 8))
@@ -182,7 +182,7 @@ class WatcurrentsFactory(SADCOModelFactory):
     current_dir = factory.Faker('random_number', digits=randint(1, 38))
     current_speed = factory.LazyFunction(lambda: round(uniform(0, 99.99), 2))
 
-    watphy = factory.SubFactory('factories.WatphyFactory', wacurrents=None)
+    watphy = factory.SubFactory('factories.WatphyFactory', watcurrents=None)
 
 
 class WatchlFactory(SADCOModelFactory):
@@ -324,7 +324,7 @@ class StationFactory(SADCOModelFactory):
     date_start = factory.Faker('date')
     date_end = factory.Faker('date')
     daynull = factory.Faker('random_element', elements=('Y', 'N'))
-    stnnam = factory.Sequence(lambda n: f'{fake.city()[:9]}{n}')
+    stnnam = factory.LazyFunction(lambda: fake.city()[:10])
     stndep = factory.LazyFunction(lambda: uniform(0, 9999.99))
     offshd = factory.LazyFunction(lambda: uniform(0, 999.999))
     passkey = factory.Faker('random_number', digits=randint(0, 8))
@@ -348,10 +348,10 @@ class SurveyFactory(SADCOModelFactory):
         model = Survey
 
     survey_id = factory.SelfAttribute('inventory.survey_id')
-    institute = factory.Sequence(lambda n: f'{fake.company()[:5]}.{n}')
-    prjnam = factory.Sequence(lambda n: f'{fake.company()[:8]}.{n}')
-    expnam = factory.Sequence(lambda n: f'{fake.company()[:8]}.{n}')
-    planam = factory.Sequence(lambda n: f'{fake.company()[:8]}.{n}')
+    institute = factory.LazyFunction(lambda: fake.company()[:7])
+    prjnam = factory.LazyFunction(lambda: fake.company()[:10])
+    expnam = factory.LazyFunction(lambda: fake.company()[:10])
+    planam = factory.LazyFunction(lambda: fake.company()[:10])
     notes_1 = factory.Faker('text', max_nb_chars=198)
     notes_2 = factory.Faker('text', max_nb_chars=38)
     notes_3 = factory.Faker('text', max_nb_chars=38)
@@ -399,7 +399,7 @@ class InventoryFactory(SADCOModelFactory):
     data_available = factory.LazyFunction(lambda: choice(('Y', 'N')))
 
     survey = factory.RelatedFactory(SurveyFactory, factory_related_name='inventory')
-    planam_relation = factory.SubFactory(PlanamFactory)
+    planam = factory.SubFactory(PlanamFactory)
     institute = factory.SubFactory(InstitutesFactory)
     survey_type = factory.SubFactory(SurveyTypeFactory)
     scientist_1 = factory.SubFactory(ScientistsFactory)

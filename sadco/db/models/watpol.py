@@ -22,7 +22,7 @@ class Watpol1(Base):
     selenium = Column(Numeric(precision=7, scale=3))
     zinc = Column(Numeric(precision=7, scale=3))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watpol1')
 
 
 class Watpol2(Base):
@@ -37,4 +37,4 @@ class Watpol2(Base):
     titanium = Column(Numeric(precision=4, scale=0))
     vanadium = Column(Numeric(precision=4, scale=2))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watpol2')

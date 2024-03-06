@@ -12,4 +12,4 @@ class Watcurrents(Base):
     current_dir = Column(Numeric(precision=38, scale=0))
     current_speed = Column(Numeric(precision=4, scale=2))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watcurrents')

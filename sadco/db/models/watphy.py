@@ -29,15 +29,15 @@ class Watphy(Base):
     fluorescence = Column(Numeric(precision=8, scale=4))
 
     # The primary key for the below tables are watphy_code, they all share a one-to-one relationship with watphy
-    watnut = relationship('Watnut', uselist=False)
-    watchem1 = relationship('Watchem1', uselist=False)
-    watchem2 = relationship('Watchem2', uselist=False)
-    watpol1 = relationship('Watpol1', uselist=False)
-    watpol2 = relationship('Watpol2', uselist=False)
-    watchl = relationship('Watchl', uselist=False)
-    watcurrents = relationship('Watcurrents', uselist=False)
+    watnut = relationship('Watnut', uselist=False, back_populates='watphy')
+    watchem1 = relationship('Watchem1', uselist=False, back_populates='watphy')
+    watchem2 = relationship('Watchem2', uselist=False, back_populates='watphy')
+    watpol1 = relationship('Watpol1', uselist=False, back_populates='watphy')
+    watpol2 = relationship('Watpol2', uselist=False, back_populates='watphy')
+    watchl = relationship('Watchl', uselist=False, back_populates='watphy')
+    watcurrents = relationship('Watcurrents', uselist=False, back_populates='watphy')
 
-    station = relationship('Station', uselist=False)
+    station = relationship('Station', uselist=False, back_populates='watphy_list')
     sampling_device = relationship('SamplingDevice', uselist=False)
 
 

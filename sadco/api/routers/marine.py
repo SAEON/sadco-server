@@ -6,14 +6,13 @@ from starlette.status import HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY
 from sadco.api.lib.paging import Page, Paginator
 from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
                              Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents)
+                             Weather, Currents, Survey, Station)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
                               CurrentsModel, WeatherModel)
 
 from sadco.db import Session
-from sadco.db.models import Survey, Station
 from sadco.db.models.watchem import Watchem1
 
 router = APIRouter()
@@ -21,7 +20,7 @@ router = APIRouter()
 
 @router.get(
     '/surveys',
-    response_model=Page[SurveyModel]
+    response_model=Page[SurveyListItemModel]
 )
 async def list_surveys(
         paginator: Paginator = Depends(),
@@ -29,6 +28,13 @@ async def list_surveys(
     stmt = (
         select(
             Inventory
+        ).
+        options(
+            joinedload(Inventory.planam),
+            joinedload(Inventory.scientist_1),
+            joinedload(Inventory.scientist_2),
+            joinedload(Inventory.institute),
+            joinedload(Inventory.survey_type)
         )
     )
 
@@ -38,15 +44,22 @@ async def list_surveys(
             id=row.Inventory.survey_id,
             project_name=row.Inventory.project_name,
             station_name=row.Inventory.cruise_name,
-            platform_name=row.Inventory.planam.name,
-            chief_scientist=(row.Inventory.scientist_1.f_name + ' ' + row.Inventory.scientist_1.surname),
-            institute=row.Inventory.institute.name,
+            platform_name=row.Inventory.planam.name if row.Inventory.planam else '',
+            chief_scientist=get_chief_scientist(row.Inventory),
+            institute=row.Inventory.institute.name if row.Inventory.institute else '',
             date_start=row.Inventory.date_start,
             date_end=row.Inventory.date_end,
             survey_type=row.Inventory.survey_type.name
         ),
         sort='survey_id',
     )
+
+
+def get_chief_scientist(inventory: Inventory) -> str:
+    if inventory.scientist_1:
+        return (inventory.scientist_1.f_name.strip() + ' ' + inventory.scientist_1.surname.strip()).strip()
+
+    return ''
 
 
 @router.get(
@@ -74,7 +87,7 @@ async def get_survey(
         station_name=result.Inventory.cruise_name,
         platform_name=result.Inventory.planam.name,
         chief_scientist=(
-                result.Inventory.scientist_1.f_name.strip() + ' ' + result.Inventory.scientist_1.surname.strip()),
+                result.Inventory.scientist_1.f_name.strip() + ' ' + result.Inventory.scientist_1.surname.strip()).strip(),
         institute=result.Inventory.institute.name,
         date_start=result.Inventory.date_start,
         date_end=result.Inventory.date_end,

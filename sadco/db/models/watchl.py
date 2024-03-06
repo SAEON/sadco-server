@@ -13,4 +13,4 @@ class Watchl(Base):
     chlb = Column(Numeric(precision=6, scale=3))
     chlc = Column(Numeric(precision=6, scale=3))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watchl')

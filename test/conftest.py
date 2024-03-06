@@ -38,10 +38,7 @@ def delete_all_data():
         yield
     finally:
         with engine.begin() as conn:
-            inspector = inspect(engine)
             for table in Base.metadata.tables:
-                if not inspector.has_table(table, schema="sadco"):
-                    continue
-                conn.execute(text(f'ALTER TABLE "{table}" DISABLE TRIGGER ALL'))
-                conn.execute(text(f'DELETE FROM "{table}"'))
-                conn.execute(text(f'ALTER TABLE "{table}" ENABLE TRIGGER ALL'))
+                conn.execute(text(f'ALTER TABLE {table} DISABLE TRIGGER ALL'))
+                conn.execute(text(f'DELETE FROM {table}'))
+                conn.execute(text(f'ALTER TABLE {table} ENABLE TRIGGER ALL'))

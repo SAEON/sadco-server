@@ -90,4 +90,3 @@ class SurveyModel(BaseModel):
     stations: list[StationModel]
     data_types: Optional[DataTypesModel]
     survey_type: str
-

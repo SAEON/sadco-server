@@ -20,7 +20,7 @@ class Watchem1(Base):
     oxa = Column(Numeric(precision=6, scale=3))
     ph = Column(Numeric(precision=4, scale=2))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watchem1')
 
 
 class Watchem2(Base):
@@ -39,4 +39,4 @@ class Watchem2(Base):
     so4 = Column(Numeric(precision=6, scale=4))
     sussol = Column(Numeric(precision=6, scale=3))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watchem2')

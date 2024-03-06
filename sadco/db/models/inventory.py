@@ -43,8 +43,8 @@ class Inventory(Base):
     survey_type_code = Column(Integer, ForeignKey(column='sadco.survey_type.code'))
     data_available = Column(String(1))
 
-    survey = relationship('Survey', uselist=False)
-    planam_relation = relationship('Planam', uselist=False)
+    survey = relationship('Survey', uselist=False, back_populates='inventory')
+    planam = relationship('Planam', uselist=False)
     institute = relationship('Institutes', uselist=False)
     survey_type = relationship('SurveyType', uselist=False)
     scientist_1 = relationship("Scientists", foreign_keys=[sci_code_1], backref="inventory.sci_code_1", uselist=False)

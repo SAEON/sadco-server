@@ -15,7 +15,7 @@ class Sedchem1(Base):
     toc = Column(Numeric(precision=6, scale=3))
     ptot = Column(Numeric(precision=6, scale=3))
 
-    sedphy = relationship(Sedphy, uselist=False)
+    sedphy = relationship(Sedphy, uselist=False, back_populates='sedchem1')
 
 
 class Sedchem2(Base):
@@ -29,4 +29,4 @@ class Sedchem2(Base):
     strontium = Column(Numeric(precision=8, scale=3))
     so3 = Column(Numeric(precision=6, scale=3))
 
-    sedphy = relationship(Sedphy, uselist=False)
+    sedphy = relationship(Sedphy, uselist=False, back_populates='sedchem2')

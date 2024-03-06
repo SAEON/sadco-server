@@ -29,9 +29,9 @@ class Sedphy(Base):
     dwf = Column(Numeric(precision=7, scale=4))
     cod = Column(Numeric(precision=5, scale=3))
 
-    sedpol1 = relationship('Sedpol1', uselist=False)
-    sedpol2 = relationship('Sedpol2', uselist=False)
-    sedchem1 = relationship('Sedchem1', uselist=False)
-    sedchem2 = relationship('Sedchem2', uselist=False)
-    station = relationship('Station')
+    sedpol1 = relationship('Sedpol1', uselist=False, back_populates='sedphy')
+    sedpol2 = relationship('Sedpol2', uselist=False, back_populates='sedphy')
+    sedchem1 = relationship('Sedchem1', uselist=False, back_populates='sedphy')
+    sedchem2 = relationship('Sedchem2', uselist=False, back_populates='sedphy')
+    station = relationship('Station', back_populates='sedphy_list')
 

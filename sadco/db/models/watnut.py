@@ -17,5 +17,5 @@ class Watnut(Base):
     sio3 = Column(Numeric(precision=6, scale=2))
     sio4 = Column(Numeric(precision=6, scale=2))
 
-    watphy = relationship(Watphy, uselist=False)
+    watphy = relationship(Watphy, uselist=False, back_populates='watnut')
 

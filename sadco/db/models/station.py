@@ -31,9 +31,9 @@ class Station(Base):
     notes = Column(String(2000))
 
     # view of associated watphy, sedphy and current entries (one-to-many)
-    watphy_list = relationship('Watphy')
-    sedphy_list = relationship('Sedphy')
+    watphy_list = relationship('Watphy', back_populates='station')
+    sedphy_list = relationship('Sedphy', back_populates='station')
     currents = relationship('Currents')
 
-    survey = relationship('Survey')
+    survey = relationship('Survey', uselist=False, back_populates='stations')
     status_mode = relationship('StatusMode')
