@@ -1,7 +1,7 @@
 services:
   sadco-db:
     container_name: TEST-sadco-db
-    image: postgres:14
+    image: postgres:16.2
     ports:
       - "7357:5432"
     environment:

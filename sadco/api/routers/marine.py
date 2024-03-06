@@ -107,6 +107,9 @@ async def get_survey(
 
 
 def get_data_types(survey_id: str) -> DataTypesModel:
+    """
+    Get the datat types and their record counts for a given survey.
+    """
     data_types_model = DataTypesModel()
 
     stmt = (
@@ -239,6 +242,14 @@ def get_sedphy_joined_count(child_1, child_2, survey_id: str) -> int:
 
 
 def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id: str) -> int:
+    """
+    :param child_1: one of the related child tables
+    :param child_2: the other child table
+    :param parent_table: parent table
+    :param foreign_key_name: foreign key that links the child table to the parent table.
+    :param survey_id: survey id
+    :return: the union of record counts for child one and child 2 where they intersect with the parent.
+    """
     stmt = (
         select(
             func.count(parent_table.code)
