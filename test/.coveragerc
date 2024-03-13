@@ -1,0 +1,13 @@
+[run]
+source =
+    sadco.api.lib
+    sadco.api.models
+    sadco.api.routers
+    sadco.db
+
+branch = True
+
+[report]
+exclude_lines =
+    pragma: no cover
+    assert False

@@ -3,13 +3,10 @@ import os
 import pathlib
 
 from dotenv import load_dotenv
-from alembic import command
-from alembic.config import Config
-from sqlalchemy import delete, select, text, event, DDL
+from sqlalchemy import text, event, DDL
 from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.schema import CreateSchema
 
-from sadco.db import Base, Session, engine
+from sadco.db import Base, engine
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,44 @@
+name: CI
+
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out sadco-server
+        uses: actions/checkout@v4
+        with:
+          path: sadco-server
+
+      - name: Check out odp-core
+        uses: actions/checkout@v4
+        with:
+          repository: SAEON/odp-core
+          path: odp-core
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        working-directory: sadco-server
+        run: |
+          python -m pip install --upgrade pip pip-tools
+          pip-sync
+          
+      - name: Set up testing environment
+        working-directory: sadco-server/test
+        shell: bash
+        run: |
+          cp .env.test .env
+          docker-compose up -d
+          sleep 30s
+
+      - name: Run the tests
+        working-directory: sadco-server/test
+        run: |
+          coverage run -m pytest
+          coverage xml

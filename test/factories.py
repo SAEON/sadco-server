@@ -1,4 +1,3 @@
-from datetime import datetime
 from random import randint, uniform, choice
 
 import factory

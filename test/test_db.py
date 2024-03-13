@@ -1,9 +1,7 @@
-from sqlalchemy import select
-
 from sadco.db import Session
 from sadco.db.models import Survey, Inventory, Watphy, Station, Sedphy, Watnut, Watchem1, Watchem2, Watpol1, Watpol2, \
     Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2
-from test.factories import ScientistsFactory, InventoryFactory, InstitutesFactory, SurveyFactory, StationFactory
+from test.factories import InventoryFactory
 
 
 def test_create_read_all():

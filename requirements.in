@@ -4,10 +4,15 @@ sqlalchemy
 psycopg2
 fastapi
 starlette
+httpx
 
 # testing
 pytest
 coverage
+sqlalchemy_utils
+factory-boy
+faker
+alembic
 
 # deployment
 uvicorn
