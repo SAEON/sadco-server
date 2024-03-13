@@ -42,3 +42,8 @@ jobs:
         run: |
           coverage run -m pytest
           coverage xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          directory: sadco-server/test
