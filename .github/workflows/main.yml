@@ -44,6 +44,7 @@ jobs:
           coverage xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           directory: sadco-server/test
+          token: ${{ secrets.CODECOV_TOKEN }}
