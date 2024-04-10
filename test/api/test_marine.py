@@ -102,7 +102,6 @@ def test_fetch_surveys(api, inventories):
                 assert item['institute'] == ''
 
 
-# test fetch single survey
 def test_fetch_survey(api, survey):
     route = '/marine/surveys/{}'.format(survey.survey_id)
 
@@ -111,7 +110,24 @@ def test_fetch_survey(api, survey):
 
     assert r.status_code == 200
 
-#     Asser that survey.inventory.inv_stats.watchem_cnt etc = json.datatypes.water....
+    water_data_type = json['data_types']['water']
+    sediment_data_type = json['data_types']['sediment']
+    inventory_stats = survey.inventory.inv_stats
 
+    assert (inventory_stats.watphy_cnt,
+            max(inventory_stats.watchem1_cnt, inventory_stats.watchem2_cnt),
+            max(inventory_stats.watpol1_cnt, inventory_stats.watpol2_cnt),
+            inventory_stats.watcurrents_cnt,
+            inventory_stats.watnut_cnt) == \
+           (water_data_type['record_count'],
+            water_data_type['water_chemistry']['record_count'],
+            water_data_type['water_pollution']['record_count'],
+            water_data_type['water_currents']['record_count'],
+            water_data_type['water_nutrients']['record_count'])
 
-
+    assert (inventory_stats.sedphy_cnt,
+            max(inventory_stats.sedchem1_cnt, inventory_stats.sedchem2_cnt),
+            max(inventory_stats.sedpol1_cnt, inventory_stats.sedpol2_cnt)) == \
+           (sediment_data_type['record_count'],
+            sediment_data_type['sediment_chemistry']['record_count'],
+            sediment_data_type['sediment_pollution']['record_count'])
