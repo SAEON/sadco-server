@@ -49,4 +49,5 @@ class Inventory(Base):
     survey_type = relationship('SurveyType', uselist=False)
     scientist_1 = relationship("Scientists", foreign_keys=[sci_code_1], backref="inventory.sci_code_1", uselist=False)
     scientist_2 = relationship("Scientists", foreign_keys=[sci_code_2], backref="inventory.sci_code_2", uselist=False)
+    inv_stats = relationship("InvStats", uselist=False, back_populates="inventory")
 

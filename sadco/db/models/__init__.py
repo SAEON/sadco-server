@@ -18,3 +18,4 @@ from .watcurrents import Watcurrents
 from .currents import Currents
 from .weather import Weather
 from .status_mode import StatusMode
+from .inv_stats import InvStats
