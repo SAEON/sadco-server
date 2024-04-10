@@ -75,7 +75,7 @@ class SamplingDeviceFactory(SADCOModelFactory):
         model = SamplingDevice
 
     code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
-    name = factory.LazyFunction(lambda: fake.name())
+    name = factory.LazyFunction(lambda: fake.name()[:25])
 
 
 class StatusModeFactory(SADCOModelFactory):
