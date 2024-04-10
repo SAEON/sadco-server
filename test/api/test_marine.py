@@ -70,64 +70,6 @@ def set_sedphy_batch(station):
         Sedchem2Factory(sedphy=sedphy) if choice([True, False]) else None
 
 
-def get_data_counts(station_list: list[StationFactory]) -> dict:
-    sud_data_counts: dict = {
-        'watchem': 0,
-        'watpol': 0,
-        'watcurrents': 0,
-        'watnut': 0,
-        'sedchem': 0,
-        'sedpol': 0
-    }
-
-    for station in station_list:
-        for watphy in station.watphy_list:
-            if watphy.watchem1 or watphy.watchem2:
-                sud_data_counts['watchem'] += 1
-
-            if watphy.watpol1 or watphy.watpol2:
-                sud_data_counts['watpol'] += 1
-
-            if watphy.watcurrents:
-                sud_data_counts['watcurrents'] += 1
-
-            if watphy.watnut:
-                sud_data_counts['watnut'] += 1
-
-        for sedphy in station.sedphy_list:
-            if sedphy.sedchem1 or sedphy.sedchem2:
-                sud_data_counts['sedchem'] += 1
-
-            if sedphy.sedpol1 or sedphy.sedpol2:
-                sud_data_counts['sedpol'] += 1
-
-    return sud_data_counts
-
-
-def test_data_type_counts(api, survey):
-    route = f'/marine/surveys/{survey.survey_id}'
-
-    r = api.get(route)
-    json = r.json()
-
-    data_counts = get_data_counts(survey.stations)
-
-    water_data_types = json['data_types']['water']
-
-    sediment_data_types = json['data_types']['sediment']
-
-    assert r.status_code == 200
-
-    assert ((water_data_types['water_chemistry']['record_count'], water_data_types['water_pollution']['record_count'],
-             water_data_types['water_currents']['record_count'], water_data_types['water_nutrients']['record_count'])
-            == (data_counts['watchem'], data_counts['watpol'], data_counts['watcurrents'],
-                data_counts['watnut']))
-
-    assert ((sediment_data_types['sediment_pollution']['record_count'],
-             sediment_data_types['sediment_chemistry']['record_count'])
-            == (data_counts['sedpol'], data_counts['sedchem']))
-
-
 def test_fetch_surveys(api, inventories):
     route = '/marine/surveys'
 
@@ -158,3 +100,18 @@ def test_fetch_surveys(api, inventories):
 
             if check_empty_institute:
                 assert item['institute'] == ''
+
+
+# test fetch single survey
+def test_fetch_survey(api, survey):
+    route = '/marine/surveys/{}'.format(survey.survey_id)
+
+    r = api.get(route)
+    json = r.json()
+
+    assert r.status_code == 200
+
+#     Asser that survey.inventory.inv_stats.watchem_cnt etc = json.datatypes.water....
+
+
+

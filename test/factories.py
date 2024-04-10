@@ -3,18 +3,26 @@ from random import randint, uniform, choice
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
 from faker import Faker
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from sadco.db import Session
+import sadco.db
 from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
     SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
-    Sedpol1, Sedpol2
+    Sedpol1, Sedpol2, InvStats
+
+FactorySession = scoped_session(sessionmaker(
+    bind=sadco.db.engine,
+    autocommit=False,
+    autoflush=False,
+    future=True,
+))
 
 fake = Faker()
 
 
 class SADCOModelFactory(SQLAlchemyModelFactory):
     class Meta:
-        sqlalchemy_session = Session
+        sqlalchemy_session = FactorySession
         sqlalchemy_session_persistence = 'commit'
 
 
@@ -362,6 +370,73 @@ class SurveyFactory(SADCOModelFactory):
     stations = factory.RelatedFactory(StationFactory, factory_related_name='survey')
 
 
+class InvStatsFactory(SADCOModelFactory):
+    class Meta:
+        model = InvStats
+
+    survey_id = factory.SelfAttribute('inventory.survey_id')
+    station_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watphy_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watnut_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watpol1_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watpol2_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watchem1_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watchem2_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watchl_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedphy_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedpes_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedpol1_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedpol2_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedchem1_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedchem2_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedtax_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plaphy_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plapes_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plapol1_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plapol2_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    platax_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plachl_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tisphy_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tispes_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tispol1_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tispol2_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tisanimal_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    weather_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watcurrents_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watosd_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watctd_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watxbt_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watmbt_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watpfl_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watphy_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watosd_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watctd_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watxbt_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watmbt_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watpfl_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watnut_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watpol_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watchem_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watchl_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedphy_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedpes_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedpol_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedchem_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    sedtax_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plaphy_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plapes_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plapol_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    platax_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    plachl_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tisphy_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tispes_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tispol_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    tisanimal_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+    watcurrents_stn_cnt = factory.Faker('random_number', digits=randint(1, 38))
+
+    inventory = factory.SubFactory('factories.InventoryFactory', inv_stats=None)
+
+
 class InventoryFactory(SADCOModelFactory):
     class Meta:
         model = Inventory
@@ -403,3 +478,4 @@ class InventoryFactory(SADCOModelFactory):
     survey_type = factory.SubFactory(SurveyTypeFactory)
     scientist_1 = factory.SubFactory(ScientistsFactory)
     scientist_2 = factory.SubFactory(ScientistsFactory)
+    inv_stats = factory.RelatedFactory(InvStatsFactory, factory_related_name='inventory')

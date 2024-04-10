@@ -1,11 +1,13 @@
 import pytest
 
 from sqlalchemy_utils import create_database, drop_database
-from sqlalchemy import text, inspect
+from sqlalchemy import text
 
 import migrate.systemdata
-from sadco.db import Base, Session, engine
+import sadco.db
 from sadco.config import sadco_config
+from test import TestSession
+from test.factories import FactorySession
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -27,7 +29,9 @@ def session():
     try:
         yield
     finally:
-        Session.remove()
+        sadco.db.Session.remove()
+        FactorySession.remove()
+        TestSession.remove()
 
 
 @pytest.fixture(autouse=True)
@@ -37,8 +41,8 @@ def delete_all_data():
     try:
         yield
     finally:
-        with engine.begin() as conn:
-            for table in Base.metadata.tables:
+        with sadco.db.engine.begin() as conn:
+            for table in sadco.db.Base.metadata.tables:
                 conn.execute(text(f'ALTER TABLE {table} DISABLE TRIGGER ALL'))
                 conn.execute(text(f'DELETE FROM {table}'))
                 conn.execute(text(f'ALTER TABLE {table} ENABLE TRIGGER ALL'))
