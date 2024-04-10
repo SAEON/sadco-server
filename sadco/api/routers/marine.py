@@ -1,16 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func, and_, or_
+from datetime import date
+from math import ceil
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic.types import Json
+from sqlalchemy import select, exists, func, and_, or_
 from sqlalchemy.orm import load_only, joinedload
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY
 
 from sadco.api.lib.paging import Page, Paginator
+from sadco.api.models.marine import SamplingDeviceModel
 from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
                              Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents, Survey, Station)
+                             Weather, Currents, Survey, Station, SamplingDevice, InvStats)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
-                              CurrentsModel, WeatherModel)
+                              CurrentsModel, WeatherModel, SearchResult)
 
 from sadco.db import Session
 from sadco.db.models.watchem import Watchem1
@@ -55,6 +60,137 @@ async def list_surveys(
     )
 
 
+@router.get(
+    '/surveys/search',
+    response_model=SearchResult
+)
+async def list_surveys(
+        survey_id: str = Query(None, title='Survey ID'),
+        sampling_device_code: int = Query(None, title='Sampling device'),
+        north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
+        south_bound: float = Query(None, title='South bound latitude', ge=-90, le=90),
+        east_bound: float = Query(None, title='East bound longitude', ge=-180, le=180),
+        west_bound: float = Query(None, title='West bound longitude', ge=-180, le=180),
+        start_date: date = Query(None, title='Date range start'),
+        end_date: date = Query(None, title='Date range end'),
+        exclusive_region: bool = Query(False, title='Exclude partial spatial matches'),
+        exclusive_interval: bool = Query(False, title='Exclude partial temporal matches'),
+        page: int = Query(1, ge=1, title='Page number'),
+        size: int = Query(50, ge=0, title='Page size; 0=unlimited'),
+):
+    stmt = (
+        select(
+            Inventory
+        ).
+        options(
+            joinedload(Inventory.planam),
+            joinedload(Inventory.scientist_1),
+            joinedload(Inventory.scientist_2),
+            joinedload(Inventory.institute),
+            joinedload(Inventory.survey_type)
+        )
+    )
+
+    if survey_id is not None:
+        stmt = stmt.where(Inventory.survey_id.like(f'{survey_id}%'))
+
+    if exclusive_region:
+        # We need to use the negation of North and South because they come from the DB as south
+        if north_bound is not None:
+            stmt = stmt.where(-Inventory.lat_north <= north_bound)
+
+        if south_bound is not None:
+            stmt = stmt.where(-Inventory.lat_south >= south_bound)
+
+        if east_bound is not None:
+            stmt = stmt.where(Inventory.long_east <= east_bound)
+
+        if west_bound is not None:
+            stmt = stmt.where(Inventory.long_west >= west_bound)
+
+    else:
+        if north_bound is not None:
+            stmt = stmt.where(-Inventory.lat_south <= north_bound)
+
+        if south_bound is not None:
+            stmt = stmt.where(-Inventory.lat_north >= south_bound)
+
+        if east_bound is not None:
+            stmt = stmt.where(Inventory.long_west <= east_bound)
+
+        if west_bound is not None:
+            stmt = stmt.where(Inventory.long_east >= west_bound)
+
+    if exclusive_interval:
+        if start_date:
+            stmt = stmt.where(Inventory.date_start >= start_date)
+
+        if end_date:
+            stmt = stmt.where(Inventory.date_end <= end_date)
+
+    else:
+        if start_date:
+            stmt = stmt.where(Inventory.date_end >= start_date)
+
+        if end_date:
+            stmt = stmt.where(Inventory.date_start <= end_date)
+
+    sampling_device_query = (
+        select(func.count(Station.survey_id.distinct()).label('device_count'), SamplingDevice.code, SamplingDevice.name)
+        .join(Sedphy, SamplingDevice.code == Sedphy.device_code)
+        .join(Station, Station.station_id == Sedphy.station_id)
+        .group_by(SamplingDevice.code)
+    )
+
+    if sampling_device_code is not None:
+        sampling_device_query = sampling_device_query.where(SamplingDevice.code == sampling_device_code)
+
+        stmt = stmt.join(Survey).join(Station).join(Sedphy).where(Sedphy.device_code == sampling_device_code)
+
+    sampling_devices = [
+        SamplingDeviceModel(
+            code=row.code,
+            name=row.name,
+            count=row.device_count
+        )
+        for row in Session.execute(sampling_device_query)
+    ]
+
+    total = Session.execute(
+        select(func.count())
+        .select_from(stmt.distinct().subquery())
+    ).scalar_one()
+
+    limit = size or total
+    items = [
+        SurveyListItemModel(
+            id=row.Inventory.survey_id,
+            project_name=row.Inventory.project_name,
+            station_name=row.Inventory.cruise_name,
+            platform_name=row.Inventory.planam.name if row.Inventory.planam else '',
+            chief_scientist=get_chief_scientist(row.Inventory),
+            institute=row.Inventory.institute.name if row.Inventory.institute else '',
+            date_start=row.Inventory.date_start,
+            date_end=row.Inventory.date_end,
+            survey_type=row.Inventory.survey_type.name if row.Inventory.survey_type is not None else ''
+        ) for row in Session.execute(
+            stmt.
+            order_by(Inventory.survey_id).
+            distinct().
+            offset(limit * (page - 1)).
+            limit(limit)
+        )
+    ]
+
+    return SearchResult(
+        items=items,
+        sampling_devices=sampling_devices,
+        total=total,
+        page=page,
+        pages=ceil(total / limit) if limit else 0,
+    )
+
+
 def get_chief_scientist(inventory: Inventory) -> str:
     if inventory.scientist_1:
         return (inventory.scientist_1.f_name.strip() + ' ' + inventory.scientist_1.surname.strip()).strip()
@@ -91,24 +227,80 @@ async def get_survey(
         institute=result.Inventory.institute.name,
         date_start=result.Inventory.date_start,
         date_end=result.Inventory.date_end,
-        lat_north=result.Inventory.lat_north,
-        lat_south=result.Inventory.lat_south,
+        lat_north=-result.Inventory.lat_north,   # Use negation as the value from the db is South
+        lat_south=-result.Inventory.lat_south,  # Use negation as the value from the db is South
         long_west=result.Inventory.long_west,
         long_east=result.Inventory.long_east,
         survey_type=result.Inventory.survey_type.name,
         stations=[
             StationModel(
-                latitude=station.latitude,
+                latitude=-station.latitude,  # Use negation as the value from the db is South
                 longitude=station.longitude
             ) for station in result.Inventory.survey.stations
         ],
-        data_types=get_data_types(result.Inventory.survey_id)
+        data_types=get_data_types(result.Inventory.inv_stats)
     )
 
 
-def get_data_types(survey_id: str) -> DataTypesModel:
+def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
     """
-    Get the datat types and their record counts for a given survey.
+    Get the datat types and their record counts for a given Inventory.
+    If the data type is split into 2, the max is used.
+    """
+    data_types_model = DataTypesModel()
+
+    if inventory_statistics.watphy_cnt > 0:
+        water_model = WaterModel(
+            record_count=inventory_statistics.watphy_cnt
+        )
+
+        if inventory_statistics.watchem1_cnt > 0 or inventory_statistics.watchem2_cnt > 0:
+            water_model.water_chemistry = WaterChemistryModel(
+                record_count=max(inventory_statistics.watchem1_cnt, inventory_statistics.watchem2_cnt)
+            )
+
+        if inventory_statistics.watpol1_cnt > 0 or inventory_statistics.watpol2_cnt > 0:
+            water_model.water_pollution = WaterPollutionModel(
+                record_count=max(inventory_statistics.watpol1_cnt, inventory_statistics.watpol2_cnt)
+            )
+
+        if inventory_statistics.watcurrents_cnt > 0:
+            water_model.water_currents = WaterCurrentsModel(
+                record_count=inventory_statistics.watcurrents_cnt
+            )
+
+        if inventory_statistics.watnut_cnt > 0:
+            water_model.water_nutrients = WaterNutrientsModel(
+                record_count=inventory_statistics.watnut_cnt
+            )
+
+        data_types_model.water = water_model
+
+    if inventory_statistics.sedphy_cnt > 0:
+        sediment_model = SedimentModel(
+            record_count=inventory_statistics.sedphy_cnt
+        )
+
+        if inventory_statistics.sedchem1_cnt > 0 or inventory_statistics.sedchem2_cnt > 0:
+            sediment_model.sediment_chemistry = SedimentChemistryModel(
+                record_count=max(inventory_statistics.sedchem1_cnt, inventory_statistics.sedchem2_cnt)
+            )
+
+        if inventory_statistics.sedpol1_cnt > 0 or inventory_statistics.sedpol2_cnt > 0:
+            sediment_model.sediment_pollution = SedimentPollutionModel(
+                record_count=max(inventory_statistics.sedpol1_cnt, inventory_statistics.sedpol2_cnt)
+            )
+
+        data_types_model.sediment = sediment_model
+
+    return data_types_model
+
+
+def get_data_types_manually(survey_id: str) -> DataTypesModel:
+    """
+    This function is not in use. It fetches and constructs data types for a specific survey.
+    The values calculated using this function can be extracted from the inv_stats table.
+    param survey_id: The survey id for which to construct the data types.
     """
     data_types_model = DataTypesModel()
 
@@ -268,3 +460,4 @@ def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id
     )
 
     return Session.execute(stmt).scalar()
+

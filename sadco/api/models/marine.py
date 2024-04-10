@@ -90,3 +90,17 @@ class SurveyModel(BaseModel):
     stations: list[StationModel]
     data_types: Optional[DataTypesModel]
     survey_type: str
+
+
+class SamplingDeviceModel(BaseModel):
+    code: int
+    name: str
+    count: int
+
+
+class SearchResult(BaseModel):
+    items: list[SurveyListItemModel]
+    sampling_devices: list[SamplingDeviceModel]
+    total: int
+    page: int
+    pages: int
