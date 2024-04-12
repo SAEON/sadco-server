@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from sadco.api.routers import marine
+from sadco.api.routers import survey
 from sadco.db import Session
 from odp.version import VERSION
 
@@ -13,7 +13,7 @@ app = FastAPI(
     redoc_url='/docs',
 )
 
-app.include_router(marine.router, prefix='/marine', tags=['Survey'])
+app.include_router(survey.router, prefix='/marine', tags=['Survey'])
 
 app.add_middleware(
     CORSMiddleware,

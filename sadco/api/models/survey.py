@@ -88,8 +88,11 @@ class SurveyModel(BaseModel):
     long_west: Optional[float]
     long_east: Optional[float]
     stations: list[StationModel]
-    data_types: Optional[DataTypesModel]
     survey_type: str
+
+
+class HydroSurveyModel(SurveyModel):
+    data_types: Optional[DataTypesModel]
 
 
 class SamplingDeviceModel(BaseModel):

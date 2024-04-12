@@ -1,4 +1,4 @@
-from .marine import (SurveyModel, SurveyListItemModel, StationModel, WaterModel, WaterCurrentsModel,
+from .survey import (SurveyModel, SurveyListItemModel, StationModel, WaterModel, WaterCurrentsModel,
                      WaterChemistryModel, WaterPollutionModel, WaterNutrientsModel, DataTypesModel,
-                     SedimentChemistryModel,
+                     SedimentChemistryModel, HydroSurveyModel, SamplingDeviceModel,
                      SedimentPollutionModel, SedimentModel, CurrentsModel, WeatherModel, SearchResult)

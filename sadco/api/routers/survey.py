@@ -8,14 +8,13 @@ from sqlalchemy.orm import load_only, joinedload
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY
 
 from sadco.api.lib.paging import Page, Paginator
-from sadco.api.models.marine import SamplingDeviceModel
 from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
                              Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
                              Weather, Currents, Survey, Station, SamplingDevice, InvStats)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
-                              CurrentsModel, WeatherModel, SearchResult)
+                              CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel, HydroSurveyModel)
 
 from sadco.db import Session
 from sadco.db.models.watchem import Watchem1
@@ -199,8 +198,8 @@ def get_chief_scientist(inventory: Inventory) -> str:
 
 
 @router.get(
-    '/surveys/{survey_id}',
-    response_model=SurveyModel
+    '/surveys/hydro/{survey_id}',
+    response_model=HydroSurveyModel
 )
 async def get_survey(
         survey_id: str
@@ -217,7 +216,7 @@ async def get_survey(
     if not (result := Session.execute(stmt).one_or_none()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return SurveyModel(
+    survey_model = SurveyModel(
         id=result.Inventory.survey_id,
         project_name=result.Inventory.project_name,
         station_name=result.Inventory.cruise_name,
@@ -227,7 +226,7 @@ async def get_survey(
         institute=result.Inventory.institute.name,
         date_start=result.Inventory.date_start,
         date_end=result.Inventory.date_end,
-        lat_north=-result.Inventory.lat_north,   # Use negation as the value from the db is South
+        lat_north=-result.Inventory.lat_north,  # Use negation as the value from the db is South
         lat_south=-result.Inventory.lat_south,  # Use negation as the value from the db is South
         long_west=result.Inventory.long_west,
         long_east=result.Inventory.long_east,
@@ -237,7 +236,11 @@ async def get_survey(
                 latitude=-station.latitude,  # Use negation as the value from the db is South
                 longitude=station.longitude
             ) for station in result.Inventory.survey.stations
-        ],
+        ]
+    )
+
+    return HydroSurveyModel(
+        **survey_model.dict(),
         data_types=get_data_types(result.Inventory.inv_stats)
     )
 
@@ -460,4 +463,3 @@ def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id
     )
 
     return Session.execute(stmt).scalar()
-
