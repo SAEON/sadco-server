@@ -187,6 +187,25 @@ def test_search_interval(api, inventory):
     assert json['items'][0]['id'] == inventory.survey_id
 
 
+def test_search_sampling_device(api, survey):
+    sampling_device_code = survey.stations[0].sedphy_list[0].device_code
+
+    route = '/survey/surveys/search'
+
+    r = api.get(
+        route,
+        params={
+            'sampling_device_code': sampling_device_code
+        }
+    )
+
+    json = r.json()
+
+    assert r.status_code == 200
+
+    assert len(json['items']) > 0
+
+
 def test_fetch_survey(api, survey):
     route = '/survey/hydro/{}'.format(survey.survey_id)
 
