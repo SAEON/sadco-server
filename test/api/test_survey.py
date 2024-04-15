@@ -1,4 +1,5 @@
 from random import randint, choice
+from datetime import date, timedelta
 
 import pytest
 
@@ -71,7 +72,7 @@ def set_sedphy_batch(station):
 
 
 def test_fetch_surveys(api, inventories):
-    route = '/marine/surveys'
+    route = '/survey/surveys'
 
     r = api.get(route)
     json = r.json()
@@ -102,8 +103,92 @@ def test_fetch_surveys(api, inventories):
                 assert item['institute'] == ''
 
 
+def test_search_bounds(api, inventory):
+    route = '/survey/surveys/search'
+
+    r = api.get(
+        route,
+        params={
+            'north_bound': (-inventory.lat_south)+1,
+            'south_bound': (-inventory.lat_north)-1,
+            'west_bound': inventory.long_east-1,
+            'east_bound': inventory.long_west+1,
+        }
+    )
+
+    json = r.json()
+
+    assert r.status_code == 200
+
+    assert len(json['items']) == 1
+
+    assert json['items'][0]['id'] == inventory.survey_id
+
+    r = api.get(
+        route,
+        params={
+            'north_bound': (-inventory.lat_north) + 1,
+            'south_bound': (-inventory.lat_south) - 1,
+            'west_bound': inventory.long_west - 1,
+            'east_bound': inventory.long_east + 1,
+            'exclusive_region': True
+        }
+    )
+
+    json = r.json()
+
+    assert r.status_code == 200
+
+    assert len(json['items']) == 1
+
+    assert json['items'][0]['id'] == inventory.survey_id
+
+
+def test_search_interval(api, inventory):
+    route = '/survey/surveys/search'
+
+    start_date = (inventory.date_end - timedelta(days=1)).strftime("%Y-%m-%d")
+    end_date = (inventory.date_start + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    r = api.get(
+        route,
+        params={
+            'start_date': start_date,
+            'end_date': end_date
+        }
+    )
+
+    json = r.json()
+
+    assert r.status_code == 200
+
+    assert len(json['items']) == 1
+
+    assert json['items'][0]['id'] == inventory.survey_id
+
+    start_date = (inventory.date_start - timedelta(days=1)).strftime("%Y-%m-%d")
+    end_date = (inventory.date_end + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    r = api.get(
+        route,
+        params={
+            'start_date': start_date,
+            'end_date': end_date,
+            'exclusive_interval': True
+        }
+    )
+
+    json = r.json()
+
+    assert r.status_code == 200
+
+    assert len(json['items']) == 1
+
+    assert json['items'][0]['id'] == inventory.survey_id
+
+
 def test_fetch_survey(api, survey):
-    route = '/marine/surveys/{}'.format(survey.survey_id)
+    route = '/survey/hydro/{}'.format(survey.survey_id)
 
     r = api.get(route)
     json = r.json()
@@ -131,3 +216,6 @@ def test_fetch_survey(api, survey):
            (sediment_data_type['record_count'],
             sediment_data_type['sediment_chemistry']['record_count'],
             sediment_data_type['sediment_pollution']['record_count'])
+
+
+
