@@ -14,7 +14,8 @@ from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyTy
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
-                              CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel, HydroSurveyModel)
+                              SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
+                              HydroSurveyModel)
 
 from sadco.db import Session
 from sadco.db.models.watchem import Watchem1
@@ -66,6 +67,7 @@ async def list_surveys(
 async def list_surveys(
         survey_id: str = Query(None, title='Survey ID'),
         sampling_device_code: int = Query(None, title='Sampling device'),
+        survey_type_code: str = Query(None, title='Survey type'),
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
         south_bound: float = Query(None, title='South bound latitude', ge=-90, le=90),
         east_bound: float = Query(None, title='East bound longitude', ge=-180, le=180),
@@ -155,6 +157,25 @@ async def list_surveys(
         for row in Session.execute(sampling_device_query)
     ]
 
+    survey_type_query = (
+        select(func.count(Inventory.survey_id.distinct()).label('survey_type_count'), SurveyType.code, SurveyType.name)
+        .group_by(SurveyType.code)
+    )
+
+    if survey_type_code is not None:
+        survey_type_query = survey_type_query.where(SurveyType.code == survey_type_code)
+
+        stmt = stmt.where(Inventory.survey_type_code == survey_type_code)
+
+    survey_types = [
+        SurveyTypeModel(
+            code=row.code,
+            name=row.name,
+            count=row.survey_type_count
+        )
+        for row in Session.execute(survey_type_query)
+    ]
+
     total = Session.execute(
         select(func.count())
         .select_from(stmt.distinct().subquery())
@@ -184,6 +205,7 @@ async def list_surveys(
     return SearchResult(
         items=items,
         sampling_devices=sampling_devices,
+        survey_types=survey_types,
         total=total,
         page=page,
         pages=ceil(total / limit) if limit else 0,

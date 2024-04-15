@@ -101,9 +101,16 @@ class SamplingDeviceModel(BaseModel):
     count: int
 
 
+class SurveyTypeModel(BaseModel):
+    code: int
+    name: str
+    count: int
+
+
 class SearchResult(BaseModel):
     items: list[SurveyListItemModel]
     sampling_devices: list[SamplingDeviceModel]
+    survey_types: list[SurveyTypeModel]
     total: int
     page: int
     pages: int

@@ -206,6 +206,31 @@ def test_search_sampling_device(api, survey):
     assert len(json['items']) > 0
 
 
+def test_search_survey_type(api, inventory):
+    survey_type = inventory.survey_type
+
+    route = '/survey/surveys/search'
+
+    r = api.get(
+        route,
+        params={
+            'survey_type_code': survey_type.code
+        }
+    )
+
+    json = r.json()
+
+    assert r.status_code == 200
+
+    assert len(json['items']) > 0
+
+    for item in json['items']:
+        assert item['survey_type'] == survey_type.name
+
+    for fetched_survey_type in json['survey_types']:
+        assert fetched_survey_type['code'] == survey_type.code
+
+
 def test_fetch_survey(api, survey):
     route = '/survey/hydro/{}'.format(survey.survey_id)
 
