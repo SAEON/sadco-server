@@ -198,7 +198,7 @@ def get_chief_scientist(inventory: Inventory) -> str:
 
 
 @router.get(
-    '/surveys/hydro/{survey_id}',
+    '/hydro/{survey_id}',
     response_model=HydroSurveyModel
 )
 async def get_survey(

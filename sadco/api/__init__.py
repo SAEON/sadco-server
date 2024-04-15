@@ -13,7 +13,7 @@ app = FastAPI(
     redoc_url='/docs',
 )
 
-app.include_router(survey.router, prefix='/marine', tags=['Survey'])
+app.include_router(survey.router, prefix='/survey', tags=['Survey'])
 
 app.add_middleware(
     CORSMiddleware,
