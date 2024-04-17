@@ -5,6 +5,7 @@ psycopg2
 fastapi
 starlette
 httpx
+pandas
 
 # testing
 pytest

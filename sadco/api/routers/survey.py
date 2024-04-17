@@ -1,7 +1,11 @@
 from datetime import date
 from math import ceil
 
+import pandas as pd
+
+from io import StringIO
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic.types import Json
 from sqlalchemy import select, exists, func, and_, or_
 from sqlalchemy.orm import load_only, joinedload
@@ -159,7 +163,9 @@ async def list_surveys(
 
     survey_type_query = (
         select(func.count(Inventory.survey_id.distinct()).label('survey_type_count'), SurveyType.code, SurveyType.name)
+        .join(SurveyType)
         .group_by(SurveyType.code)
+        .group_by(SurveyType.name)
     )
 
     if survey_type_code is not None:
@@ -238,33 +244,65 @@ async def get_survey(
     if not (result := Session.execute(stmt).one_or_none()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    survey_model = SurveyModel(
-        id=result.Inventory.survey_id,
-        project_name=result.Inventory.project_name,
-        station_name=result.Inventory.cruise_name,
-        platform_name=result.Inventory.planam.name,
+    return HydroSurveyModel(
+        **get_survey_model(result.Inventory).dict(),
+        data_types=get_data_types(result.Inventory.inv_stats)
+    )
+
+
+def get_survey_model(inventory: Inventory) -> SurveyModel:
+    """
+    Get the generic survey model
+    """
+    return SurveyModel(
+        id=inventory.survey_id,
+        project_name=inventory.project_name,
+        station_name=inventory.cruise_name,
+        platform_name=inventory.planam.name,
         chief_scientist=(
-                result.Inventory.scientist_1.f_name.strip() + ' ' + result.Inventory.scientist_1.surname.strip()).strip(),
-        institute=result.Inventory.institute.name,
-        date_start=result.Inventory.date_start,
-        date_end=result.Inventory.date_end,
-        lat_north=-result.Inventory.lat_north,  # Use negation as the value from the db is South
-        lat_south=-result.Inventory.lat_south,  # Use negation as the value from the db is South
-        long_west=result.Inventory.long_west,
-        long_east=result.Inventory.long_east,
-        survey_type=result.Inventory.survey_type.name,
+                inventory.scientist_1.f_name.strip() + ' ' + inventory.scientist_1.surname.strip()).strip(),
+        institute=inventory.institute.name,
+        date_start=inventory.date_start,
+        date_end=inventory.date_end,
+        lat_north=-inventory.lat_north,  # Use negation as the value from the db is South
+        lat_south=-inventory.lat_south,  # Use negation as the value from the db is South
+        long_west=inventory.long_west,
+        long_east=inventory.long_east,
+        survey_type=inventory.survey_type.name,
         stations=[
             StationModel(
                 latitude=-station.latitude,  # Use negation as the value from the db is South
                 longitude=station.longitude
-            ) for station in result.Inventory.survey.stations
+            ) for station in inventory.survey.stations
         ]
     )
 
-    return HydroSurveyModel(
-        **survey_model.dict(),
-        data_types=get_data_types(result.Inventory.inv_stats)
+
+@router.get(
+    '/download/{survey_id}',
+    response_class=StreamingResponse
+)
+async def download_survey_data(
+        survey_id: str
+):
+    stmt = (
+        select(Survey).
+        join(Station).
+        where(Survey.survey_id == survey_id.replace('-', '/'))
     )
+
+    if not (result := Session.execute(stmt).fetchall()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    data = pd.DataFrame(result)
+
+    stream = StringIO()
+
+    data.to_csv(stream, index=False)
+
+    response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}.csv"
+    return response
 
 
 def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
@@ -321,6 +359,7 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
     return data_types_model
 
 
+# pragma: no cover
 def get_data_types_manually(survey_id: str) -> DataTypesModel:
     """
     This function is not in use. It fetches and constructs data types for a specific survey.
@@ -366,6 +405,7 @@ def get_data_types_manually(survey_id: str) -> DataTypesModel:
     return data_types_model
 
 
+# pragma: no cover
 def get_water_model(survey_id: str) -> WaterModel:
     stmt = (
         select(
@@ -415,6 +455,7 @@ def get_water_model(survey_id: str) -> WaterModel:
     return water_model
 
 
+# pragma: no cover
 def get_sediment_model(survey_id: str) -> SedimentModel:
     stmt = (
         select(
@@ -450,14 +491,17 @@ def get_sediment_model(survey_id: str) -> SedimentModel:
     return sediment_model
 
 
+# pragma: no cover
 def get_watphy_joined_count(child_1, child_2, survey_id: str) -> int:
     return get_joined_count(child_1, child_2, Watphy, 'watphy_code', survey_id)
 
 
+# pragma: no cover
 def get_sedphy_joined_count(child_1, child_2, survey_id: str) -> int:
     return get_joined_count(child_1, child_2, Sedphy, 'sedphy_code', survey_id)
 
 
+# pragma: no cover
 def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id: str) -> int:
     """
     :param child_1: one of the related child tables
