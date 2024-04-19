@@ -325,7 +325,7 @@ class StationFactory(SADCOModelFactory):
     class Meta:
         model = Station
 
-    station_id = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 11))}{n}')
+    station_id = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 11))}')
     latitude = factory.Faker('latitude')
     longitude = factory.Faker('longitude')
     date_start = factory.Faker('date')
