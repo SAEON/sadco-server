@@ -1,4 +1,5 @@
 from .survey import (SurveyModel, SurveyListItemModel, StationModel, WaterModel, WaterCurrentsModel,
                      WaterChemistryModel, WaterPollutionModel, WaterNutrientsModel, DataTypesModel,
                      SedimentChemistryModel, HydroSurveyModel, SamplingDeviceModel, SurveyTypeModel,
-                     SedimentPollutionModel, SedimentModel, CurrentsModel, WeatherModel, SearchResult)
+                     SedimentPollutionModel, SedimentModel, CurrentsModel, WeatherModel, SearchResult,
+                     HydroPhysNutModel)

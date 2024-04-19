@@ -2,8 +2,9 @@ from datetime import date
 from math import ceil
 
 import pandas as pd
+import zipfile
 
-from io import StringIO
+from io import StringIO, BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic.types import Json
@@ -14,12 +15,12 @@ from starlette.status import HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY
 from sadco.api.lib.paging import Page, Paginator
 from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
                              Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents, Survey, Station, SamplingDevice, InvStats)
+                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, station)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
-                              HydroSurveyModel)
+                              HydroSurveyModel, HydroPhysNutModel)
 
 from sadco.db import Session
 from sadco.db.models.watchem import Watchem1
@@ -287,21 +288,73 @@ async def download_survey_data(
 ):
     stmt = (
         select(Survey).
-        join(Station).
-        where(Survey.survey_id == survey_id.replace('-', '/'))
+        where(Survey.survey_id == survey_id.replace('-', '/')).
+        options(
+            joinedload(Survey.stations).
+            joinedload(Station.watphy_list).
+            joinedload(Watphy.watnut)
+        ).
+        options(
+            joinedload(Survey.stations).
+            joinedload(Station.watphy_list).
+            joinedload(Watphy.watchem1)
+        ).
+        options(
+            joinedload(Survey.stations).
+            joinedload(Station.watphy_list).
+            joinedload(Watphy.watchl)
+        )
     )
 
-    if not (result := Session.execute(stmt).fetchall()):
+    if not (results := Session.execute(stmt).unique()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    data = pd.DataFrame(result)
+    items = [
+        HydroPhysNutModel(
+            survey_id=station.survey_id,
+            latitude=station.latitude,
+            longitude=station.longitude,
+            year=station.date_start.year,
+            month=station.date_start.month,
+            day=station.date_start.day,
+            time='',
+            station_name=station.stnnam if station.stnnam else '',
+            station_id=station.station_id,
+            platform_name=row.Survey.planam if row.Survey.planam else '',
+            instrument=watphy.sampling_device.name if watphy.sampling_device and watphy.sampling_device.name else '',
+            max_sampling_depth=station.max_spldep if station.max_spldep else 0,
+            temperature=watphy.temperature if watphy.temperature else 0,
+            salinity=watphy.salinity if watphy.salinity else 0,
+            dissolved_oxygen=watphy.disoxygen if watphy.disoxygen else 0,
+            sound_velocity=watphy.soundv if watphy.soundv else 0,
+            no2=watphy.watnut.no2 if watphy.watnut and watphy.watnut.no2 else 0,
+            no3=watphy.watnut.no3 if watphy.watnut and watphy.watnut.no3 else 0,
+            po4=watphy.watnut.po4 if watphy.watnut and watphy.watnut.po4 else 0,
+            ptot=watphy.watnut.ptot if watphy.watnut and watphy.watnut.ptot else 0,
+            sio3=watphy.watnut.sio3 if watphy.watnut and watphy.watnut.sio3 else 0,
+            ph=watphy.watchem1.ph if watphy.watchem1 and watphy.watchem1.ph else 0,
+            chla=watphy.watchl.chla if watphy.watchl and watphy.watchl.chla else 0,
+        ).__dict__
+        for row in results
+        for station in row.Survey.stations
+        for watphy in station.watphy_list
+    ]
+
+    data = pd.DataFrame(items)
 
     stream = StringIO()
 
     data.to_csv(stream, index=False)
 
-    response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
-    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}.csv"
+    zip_buffer = BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, mode="w") as zip_archive:
+        stream.seek(0)
+        zip_archive.writestr(f"survey_{survey_id}.csv", stream.read())
+
+    response = StreamingResponse(iter([zip_buffer.getvalue()]), media_type="application/zip")
+    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}.zip"
+
     return response
 
 

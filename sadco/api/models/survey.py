@@ -114,3 +114,29 @@ class SearchResult(BaseModel):
     total: int
     page: int
     pages: int
+
+
+class HydroPhysNutModel(BaseModel):
+    survey_id: str
+    latitude: float
+    longitude: float
+    year: int
+    month: int
+    day: int
+    time: Optional[str]
+    station_name: str
+    station_id: str
+    platform_name: str
+    instrument: str
+    max_sampling_depth: float
+    temperature: float
+    salinity: float
+    dissolved_oxygen: float
+    sound_velocity: float
+    no2: float
+    no3: float
+    po4: float
+    ptot: float
+    sio3: float
+    ph: float
+    chla: float
