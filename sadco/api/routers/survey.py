@@ -20,7 +20,7 @@ from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, Wa
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
-                              HydroSurveyModel, HydroPhysNutModel)
+                              HydroSurveyModel, HydroDownloadModel, HydroPhysNutDownloadModel)
 
 from sadco.db import Session
 from sadco.db.models.watchem import Watchem1
@@ -284,7 +284,8 @@ def get_survey_model(inventory: Inventory) -> SurveyModel:
     response_class=StreamingResponse
 )
 async def download_survey_data(
-        survey_id: str
+        survey_id: str,
+        data_type: str = Query(None, title='Data Type')
 ):
     stmt = (
         select(Survey).
@@ -310,7 +311,7 @@ async def download_survey_data(
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     items = [
-        HydroPhysNutModel(
+        HydroPhysNutDownloadModel(
             survey_id=station.survey_id,
             latitude=station.latitude,
             longitude=station.longitude,
@@ -321,8 +322,8 @@ async def download_survey_data(
             station_name=station.stnnam if station.stnnam else '',
             station_id=station.station_id,
             platform_name=row.Survey.planam if row.Survey.planam else '',
-            instrument=watphy.sampling_device.name if watphy.sampling_device and watphy.sampling_device.name else '',
             max_sampling_depth=station.max_spldep if station.max_spldep else 0,
+            instrument=watphy.sampling_device.name if watphy.sampling_device and watphy.sampling_device.name else '',
             temperature=watphy.temperature if watphy.temperature else 0,
             salinity=watphy.salinity if watphy.salinity else 0,
             dissolved_oxygen=watphy.disoxygen if watphy.disoxygen else 0,
@@ -412,8 +413,7 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
     return data_types_model
 
 
-# pragma: no cover
-def get_data_types_manually(survey_id: str) -> DataTypesModel:
+def get_data_types_manually(survey_id: str) -> DataTypesModel:  # pragma: no cover
     """
     This function is not in use. It fetches and constructs data types for a specific survey.
     The values calculated using this function can be extracted from the inv_stats table.
@@ -458,8 +458,7 @@ def get_data_types_manually(survey_id: str) -> DataTypesModel:
     return data_types_model
 
 
-# pragma: no cover
-def get_water_model(survey_id: str) -> WaterModel:
+def get_water_model(survey_id: str) -> WaterModel:  # pragma: no cover
     stmt = (
         select(
             func.count(Watphy.code).label('water_count'),
@@ -508,8 +507,7 @@ def get_water_model(survey_id: str) -> WaterModel:
     return water_model
 
 
-# pragma: no cover
-def get_sediment_model(survey_id: str) -> SedimentModel:
+def get_sediment_model(survey_id: str) -> SedimentModel:  # pragma: no cover
     stmt = (
         select(
             func.count(Sedphy.code)
@@ -544,18 +542,16 @@ def get_sediment_model(survey_id: str) -> SedimentModel:
     return sediment_model
 
 
-# pragma: no cover
-def get_watphy_joined_count(child_1, child_2, survey_id: str) -> int:
+def get_watphy_joined_count(child_1, child_2, survey_id: str) -> int:  # pragma: no cover
     return get_joined_count(child_1, child_2, Watphy, 'watphy_code', survey_id)
 
 
 # pragma: no cover
-def get_sedphy_joined_count(child_1, child_2, survey_id: str) -> int:
+def get_sedphy_joined_count(child_1, child_2, survey_id: str) -> int:  # pragma: no cover
     return get_joined_count(child_1, child_2, Sedphy, 'sedphy_code', survey_id)
 
 
-# pragma: no cover
-def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id: str) -> int:
+def get_joined_count(child_1, child_2, parent_table, foreign_key_name, survey_id: str) -> int:  # pragma: no cover
     """
     :param child_1: one of the related child tables
     :param child_2: the other child table

@@ -116,7 +116,7 @@ class SearchResult(BaseModel):
     pages: int
 
 
-class HydroPhysNutModel(BaseModel):
+class HydroDownloadModel(BaseModel):
     survey_id: str
     latitude: float
     longitude: float
@@ -127,8 +127,11 @@ class HydroPhysNutModel(BaseModel):
     station_name: str
     station_id: str
     platform_name: str
-    instrument: str
     max_sampling_depth: float
+
+
+class HydroPhysNutDownloadModel(HydroDownloadModel):
+    instrument: str
     temperature: float
     salinity: float
     dissolved_oxygen: float
