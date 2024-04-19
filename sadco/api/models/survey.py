@@ -130,12 +130,15 @@ class HydroDownloadModel(BaseModel):
     max_sampling_depth: float
 
 
-class HydroPhysNutDownloadModel(HydroDownloadModel):
+class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     instrument: str
     temperature: float
     salinity: float
     dissolved_oxygen: float
     sound_velocity: float
+
+
+class HydroWaterNutrientDownloadModel(HydroWaterPhysicalDownloadModel):
     no2: float
     no3: float
     po4: float
@@ -143,3 +146,25 @@ class HydroPhysNutDownloadModel(HydroDownloadModel):
     sio3: float
     ph: float
     chla: float
+
+
+class HydroWaterPollutionDownloadModel(HydroWaterPhysicalDownloadModel):
+    arsenic: float
+    cadmium: float
+    chromium: float
+    cobalt: float
+    copper: float
+    iron: float
+    lead: float
+    manganese: float
+    mercury: float
+    nickel: float
+    selenium: float
+    zinc: float
+    aluminium: float
+    antimony: float
+    bismuth: float
+    molybdenum: float
+    silver: float
+    titanium: float
+    vanadium: float
