@@ -37,7 +37,7 @@ async def download_survey_data(
         case DataType.WATERPOLLUTION:
             items = get_water_pollution_items(survey_id)
 
-    return get_zipped_csv_response(items, survey_id)
+    return get_zipped_csv_response(items, survey_id, data_type)
 
 
 def get_water_nutrient_items(survey_id: str) -> list:
@@ -165,11 +165,12 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
     )
 
 
-def get_zipped_csv_response(items, survey_id) -> StreamingResponse:
+def get_zipped_csv_response(items, survey_id, data_type) -> StreamingResponse:
     """
     Converts a list of dictionary items to a streaming response of a zipped folder containing a csv file
     :param items: A list of dictionaries that contain the information for each row of the csv
     :param survey_id: The id of the applicable survey for file naming purposes
+    :param data_type: The data type requested for file naming purposes
     """
     data = pd.DataFrame(items)
 
@@ -184,6 +185,6 @@ def get_zipped_csv_response(items, survey_id) -> StreamingResponse:
         zip_archive.writestr(f"survey_{survey_id}.csv", stream.read())
 
     response = StreamingResponse(iter([zip_buffer.getvalue()]), media_type="application/zip")
-    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}.zip"
+    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}_{data_type}.zip"
 
     return response
