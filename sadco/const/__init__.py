@@ -23,3 +23,4 @@ class DataType(str, Enum):
     SEDIMENT = 'sediment'
     SEDIMENTCHEMISTRY = 'sediment_chemistry'
     SEDIMENTPOLLUTION = 'sediment_pollution'
+    WATERNUTRIENTSANDCHEMISTRY = 'water_nutrients_and_chemistry'

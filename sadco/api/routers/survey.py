@@ -21,8 +21,7 @@ from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, Wa
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
-                              HydroSurveyModel, HydroDownloadModel, HydroWaterPhysicalDownloadModel,
-                              HydroWaterNutrientDownloadModel, HydroWaterPollutionDownloadModel)
+                              HydroSurveyModel)
 
 from sadco.db import Session
 

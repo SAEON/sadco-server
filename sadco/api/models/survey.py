@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel
@@ -138,7 +138,7 @@ class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     sound_velocity: float
 
 
-class HydroWaterNutrientDownloadModel(HydroWaterPhysicalDownloadModel):
+class HydroWaterNutrientAndChemistryDownloadModel(HydroWaterPhysicalDownloadModel):
     no2: float
     no3: float
     po4: float
@@ -168,3 +168,82 @@ class HydroWaterPollutionDownloadModel(HydroWaterPhysicalDownloadModel):
     silver: float
     titanium: float
     vanadium: float
+
+
+class HydroWaterChemistryDownloadModel(HydroWaterPhysicalDownloadModel):
+    dic: float
+    doc: float
+    fluoride: float
+    iodene: float
+    iodate: float
+    kjn: float
+    nh3: float
+    nitrogen: float
+    oxa: float
+    ph: float
+    calcium: float
+    cesium: float
+    hydrocarbons: float
+    magnesium: float
+    pah: float
+    potassium: float
+    rubidium: float
+    sodium: float
+    strontium: float
+    so4: float
+    sussol: float
+
+
+class HydroSedimentPhysicalDownloadModel(HydroDownloadModel):
+    subdes: str
+    spldattim: datetime
+    spldep: float
+    spldis: float
+    splvol: float
+    sievsz: float
+    kurt: float
+    skew: float
+    meanpz: float
+    medipz: float
+    pctsat: float
+    pctsil: float
+    permty: float
+    porsty: float
+    dwf: float
+    cod: float
+
+
+class HydroSedimentPollutionDownloadModel(HydroSedimentPhysicalDownloadModel):
+    arsenic: float
+    cadmium: float
+    chromium: float
+    cobalt: float
+    copper: float
+    iron: float
+    lead: float
+    manganese: float
+    mercury: float
+    nickel: float
+    selenium: float
+    zinc: float
+    aluminium: float
+    antimony: float
+    bismuth: float
+    molybdenum: float
+    silver: float
+    titanium: float
+    vanadium: float
+
+
+class HydroSedimentChemistryDownloadModel(HydroSedimentPhysicalDownloadModel):
+    fluoride: float
+    kjn: float
+    oxa: float
+    toc: float
+    ptot: float
+    calcium: float
+    magnesium: float
+    potassium: float
+    sodium: float
+    strontium: float
+    so3: float
