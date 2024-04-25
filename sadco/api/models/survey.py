@@ -194,6 +194,16 @@ class HydroWaterChemistryDownloadModel(HydroWaterPhysicalDownloadModel):
     sussol: float
 
 
+class HydroWaterNutrientsDownloadModel(HydroWaterPhysicalDownloadModel):
+    no2: float
+    no3: float
+    p: float
+    po4: float
+    ptot: float
+    sio3: float
+    sio4: float
+
+
 class HydroSedimentPhysicalDownloadModel(HydroDownloadModel):
     subdes: str
     spldattim: datetime

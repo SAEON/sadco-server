@@ -5,4 +5,4 @@ from .survey import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                      HydroDownloadModel, HydroWaterPhysicalDownloadModel, HydroWaterNutrientAndChemistryDownloadModel,
                      HydroWaterPollutionDownloadModel, HydroWaterChemistryDownloadModel,
                      HydroSedimentPhysicalDownloadModel, HydroSedimentChemistryDownloadModel,
-                     HydroSedimentPollutionDownloadModel)
+                     HydroSedimentPollutionDownloadModel, HydroWaterNutrientsDownloadModel)
