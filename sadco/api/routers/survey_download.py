@@ -15,7 +15,8 @@ from sadco.db.models import (Watphy, Survey, Station, Sedphy, Sedchem1, Sedchem2
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
-                              HydroWaterNutrientsDownloadModel)
+                              HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
+                              HydroSedimentChemistryDownloadModel)
 
 from sadco.db import Session
 
@@ -47,6 +48,8 @@ async def download_survey_data(
             items = get_sediment_items(survey_id)
         case DataType.SEDIMENTPOLLUTION:
             items = get_sediment_pollution_items(survey_id)
+        case DataType.SEDIMENTCHEMISTRY:
+            items = get_sediment_chemistry_items(survey_id)
 
     return get_zipped_csv_response(items, survey_id, data_type)
 
@@ -306,8 +309,10 @@ def get_sediment_physical_download_model(
             'station_id',
             'device_code',
             'method_code',
-            'standard_code'
-        ])
+            'standard_code',
+            'spldattim'
+        ]),
+        spldattim=sedphy.spldattim.strftime("%m/%d/%Y %H:%M:%S") if sedphy.spldattim else ''
     )
 
 
@@ -315,9 +320,8 @@ def get_sediment_pollution_download_model(
         sedphy: Sedphy,
         station: Station,
         survey: Survey
-) -> HydroSedimentPhysicalDownloadModel:
-    return HydroSedimentPhysicalDownloadModel(
-        **(get_hydro_download_model(station, survey).dict()),
+) -> HydroSedimentPollutionDownloadModel:
+    return HydroSedimentPollutionDownloadModel(
         **(get_sediment_physical_download_model(sedphy, station, survey).dict()),
         **get_table_data(Sedpol1, sedphy.sedpol1, fields_to_ignore=['sedphy_code']),
         **get_table_data(Sedpol2, sedphy.sedpol2, fields_to_ignore=['sedphy_code'])
@@ -326,11 +330,10 @@ def get_sediment_pollution_download_model(
 
 def get_sediment_chemistry_download_model(
         sedphy: Sedphy,
-        station: Station,
+        station: Station, 
         survey: Survey
-) -> HydroSedimentPhysicalDownloadModel:
-    return HydroSedimentPhysicalDownloadModel(
-        **(get_hydro_download_model(station, survey).dict()),
+) -> HydroSedimentChemistryDownloadModel:
+    return HydroSedimentChemistryDownloadModel(
         **(get_sediment_physical_download_model(sedphy, station, survey).dict()),
         **get_table_data(Sedchem1, sedphy.sedchem1, fields_to_ignore=['sedphy_code']),
         **get_table_data(Sedchem2, sedphy.sedchem2, fields_to_ignore=['sedphy_code'])

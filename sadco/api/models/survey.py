@@ -206,7 +206,7 @@ class HydroWaterNutrientsDownloadModel(HydroWaterPhysicalDownloadModel):
 
 class HydroSedimentPhysicalDownloadModel(HydroDownloadModel):
     subdes: str
-    spldattim: datetime
+    spldattim: str
     spldep: float
     spldis: float
     splvol: float
