@@ -132,10 +132,18 @@ class HydroDownloadModel(BaseModel):
 
 class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     instrument: str
-    temperature: float
+    subdes: str
+    spldattim: str
+    spldep: float
+    filtered: str
+    disoxygen: float
     salinity: float
-    dissolved_oxygen: float
-    sound_velocity: float
+    temperature: float
+    sound_flag: str
+    soundv: float
+    turbidity: float
+    pressure: float
+    fluorescence: float
 
 
 class HydroWaterNutrientAndChemistryDownloadModel(HydroWaterPhysicalDownloadModel):

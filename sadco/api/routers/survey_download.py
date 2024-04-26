@@ -35,7 +35,7 @@ async def download_survey_data(
 
     match data_type:
         case DataType.WATER:
-            items = ''
+            items = get_water_items(survey_id)
         case DataType.WATERNUTRIENTSANDCHEMISTRY:
             items = get_water_nutrients_and_chemistry_items(survey_id)
         case DataType.WATERPOLLUTION:
@@ -52,6 +52,26 @@ async def download_survey_data(
             items = get_sediment_chemistry_items(survey_id)
 
     return get_zipped_csv_response(items, survey_id, data_type)
+
+
+def get_water_items(survey_id: str) -> list:
+    stmt = (
+        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
+        options(
+            joinedload(Survey.stations).
+            joinedload(Station.watphy_list)
+        )
+    )
+
+    if not (results := Session.execute(stmt).unique()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return [
+        get_hydro_water_physical_download_model(sedphy, station, row.Survey).dict()
+        for row in results
+        for station in row.Survey.stations
+        for sedphy in station.watphy_list
+    ]
 
 
 def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
@@ -171,7 +191,7 @@ def get_sediment_items(survey_id: str) -> list:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return [
-        get_sediment_physical_download_model(sedphy, station, row.Survey).dict()
+        get_hydro_sediment_physical_download_model(sedphy, station, row.Survey).dict()
         for row in results
         for station in row.Survey.stations
         for sedphy in station.sedphy_list
@@ -197,7 +217,7 @@ def get_sediment_pollution_items(survey_id: str) -> list:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return [
-        get_sediment_pollution_download_model(sedphy, station, row.Survey).dict()
+        get_hydro_sediment_pollution_download_model(sedphy, station, row.Survey).dict()
         for row in results
         for station in row.Survey.stations
         for sedphy in station.sedphy_list
@@ -223,7 +243,7 @@ def get_sediment_chemistry_items(survey_id: str) -> list:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return [
-        get_sediment_chemistry_download_model(sedphy, station, row.Survey).dict()
+        get_hydro_sediment_chemistry_download_model(sedphy, station, row.Survey).dict()
         for row in results
         for station in row.Survey.stations
         for sedphy in station.sedphy_list
@@ -289,15 +309,26 @@ def get_hydro_water_physical_download_model(
 ) -> HydroWaterPhysicalDownloadModel:
     return HydroWaterPhysicalDownloadModel(
         **(get_hydro_download_model(station, survey).dict()),
+        **get_table_data(Watphy, watphy, fields_to_ignore=[
+            'instrument',
+            'subdes',
+            'station_id',
+            'device_code',
+            'method_code',
+            'standard_code',
+            'filtered',
+            'sound_flag',
+            'spldattim'
+        ]),
         instrument=watphy.sampling_device.name if watphy.sampling_device and watphy.sampling_device.name else '',
-        temperature=watphy.temperature if watphy.temperature else 0,
-        salinity=watphy.salinity if watphy.salinity else 0,
-        dissolved_oxygen=watphy.disoxygen if watphy.disoxygen else 0,
-        sound_velocity=watphy.soundv if watphy.soundv else 0,
+        subdes=watphy.subdes if watphy.subdes else '',
+        spldattim=watphy.spldattim.strftime("%m/%d/%Y %H:%M:%S") if watphy.spldattim else '',
+        filtered=watphy.filtered if watphy.filtered else '',
+        sound_flag=watphy.sound_flag if watphy.sound_flag else ''
     )
 
 
-def get_sediment_physical_download_model(
+def get_hydro_sediment_physical_download_model(
         sedphy: Sedphy,
         station: Station,
         survey: Survey
@@ -316,25 +347,25 @@ def get_sediment_physical_download_model(
     )
 
 
-def get_sediment_pollution_download_model(
+def get_hydro_sediment_pollution_download_model(
         sedphy: Sedphy,
         station: Station,
         survey: Survey
 ) -> HydroSedimentPollutionDownloadModel:
     return HydroSedimentPollutionDownloadModel(
-        **(get_sediment_physical_download_model(sedphy, station, survey).dict()),
+        **(get_hydro_sediment_physical_download_model(sedphy, station, survey).dict()),
         **get_table_data(Sedpol1, sedphy.sedpol1, fields_to_ignore=['sedphy_code']),
         **get_table_data(Sedpol2, sedphy.sedpol2, fields_to_ignore=['sedphy_code'])
     )
 
 
-def get_sediment_chemistry_download_model(
+def get_hydro_sediment_chemistry_download_model(
         sedphy: Sedphy,
         station: Station, 
         survey: Survey
 ) -> HydroSedimentChemistryDownloadModel:
     return HydroSedimentChemistryDownloadModel(
-        **(get_sediment_physical_download_model(sedphy, station, survey).dict()),
+        **(get_hydro_sediment_physical_download_model(sedphy, station, survey).dict()),
         **get_table_data(Sedchem1, sedphy.sedchem1, fields_to_ignore=['sedphy_code']),
         **get_table_data(Sedchem2, sedphy.sedchem2, fields_to_ignore=['sedphy_code'])
     )
