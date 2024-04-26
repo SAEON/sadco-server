@@ -51,6 +51,29 @@ async def download_survey_data(
     return get_zipped_csv_response(items, survey_id, data_type)
 
 
+@router.get(
+    '/wav_data',
+    response_class=StreamingResponse
+)
+async def download_wav_request_data():
+    query_text = """
+    SELECT wd.*, ws.*, ei.name as instrument_name
+    FROM sadco.wav_station ws
+    INNER JOIN sadco.wav_data wd ON ws.station_id = wd.station_id
+    INNER JOIN sadco.edm_instrument2 ei ON wd.instrument_code = ei.code
+    WHERE wd.instrument_code in (3, 1);
+    """
+
+    # Execute query using session.execute with text()
+    result = Session.execute(text(query_text))
+
+    # Turn the result into a list of dictionaries
+    columns = [col.name for col in result.cursor.description]
+    results = [{key: value for key, value in zip(columns, row)} for row in result.fetchall()]
+
+    return get_zipped_csv_response(results, 'wav_buoy_data', 'all_surveys')
+
+
 def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
     stmt = (
         select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
