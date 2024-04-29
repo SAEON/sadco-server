@@ -311,6 +311,11 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
                 record_count=inventory_statistics.watnut_cnt
             )
 
+        if inventory_statistics.watcurrents_cnt > 0:
+            water_model.water_currents = WaterCurrentsModel(
+                record_count=inventory_statistics.watcurrents_cnt
+            )
+
         data_types_model.water = water_model
 
     if inventory_statistics.sedphy_cnt > 0:
@@ -330,7 +335,36 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
 
         data_types_model.sediment = sediment_model
 
+    if inventory_statistics.weather_cnt > 0:
+        data_types_model.weather = WeatherModel(
+            record_count=inventory_statistics.weather_cnt
+        )
+
+    currents_count = get_hydro_current_count(inventory_statistics.survey_id)
+
+    if currents_count > 0:
+        data_types_model.currents = CurrentsModel(
+            record_count=currents_count
+        )
+
     return data_types_model
+
+
+def get_hydro_current_count(survey_id: str) -> int:
+    """Get the number of Current records for a given Hydro Survey"""
+    stmt = (
+        select(
+            func.count(Currents.station_id).label('currents_count')
+        ).
+        select_from(Survey).
+        join(Station).
+        outerjoin(Currents).
+        where(Survey.survey_id == survey_id)
+    )
+
+    result = Session.execute(stmt).one_or_none()
+
+    return result.currents_count
 
 
 def get_data_types_manually(survey_id: str) -> DataTypesModel:  # pragma: no cover
