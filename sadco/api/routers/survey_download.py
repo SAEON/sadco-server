@@ -4,19 +4,19 @@ import zipfile
 from io import StringIO, BytesIO
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, inspect, text
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.const import DataType
-from sadco.db.models import (Watphy, Survey, Station, Sedphy, Sedchem1, Sedchem2, Sedpol1, Sedpol2, Watchem1, Watchem2,
-                             Watpol1, Watpol2, Watnut)
+from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Watchem1, Watchem2, Watnut, Watpol1, Watpol2,
+                             Sedpol1, Sedpol2, Sedchem1, Sedchem2)
 
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
-                              HydroSedimentChemistryDownloadModel)
+                              HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel)
 
 from sadco.db import Session
 
@@ -250,6 +250,39 @@ def get_sediment_chemistry_items(survey_id: str) -> list:
     ]
 
 
+def get_weather_items(survey_id: str) -> list:
+    stmt = (
+        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
+        options(
+            joinedload(Survey.stations).
+            joinedload(Station.weather)
+        )
+    )
+
+    if not (results := Session.execute(stmt).unique()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return [
+        get_hydro_weather_download_model(row.Survey, station).dict()
+        for row in results
+        for station in row.Survey.stations
+    ]
+
+
+def get_hydro_weather_download_model(
+        survey: Survey,
+        station: Station
+) -> HydroWeatherDownloadModel:
+    return HydroWeatherDownloadModel(
+        **get_hydro_download_model(survey, station).dict(),
+        **get_table_data(
+            HydroWeatherDownloadModel,
+            Weather,
+            station.weather
+        )
+    )
+
+
 def get_hydro_water_chemistry_download_model(
         watphy: Watphy,
         station: Station,
@@ -257,8 +290,16 @@ def get_hydro_water_chemistry_download_model(
 ) -> HydroWaterChemistryDownloadModel:
     return HydroWaterChemistryDownloadModel(
         **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(Watchem1, watphy.watchem1, fields_to_ignore=['watphy_code']),
-        **get_table_data(Watchem2, watphy.watchem2, fields_to_ignore=['watphy_code'])
+        **get_table_data(
+            HydroWaterChemistryDownloadModel,
+            Watchem1,
+            watphy.watchem1
+        ),
+        **get_table_data(
+            HydroWaterChemistryDownloadModel,
+            Watchem2,
+            watphy.watchem2
+        )
     )
 
 
@@ -269,7 +310,11 @@ def get_hydro_nutrients_download_model(
 ) -> HydroWaterNutrientsDownloadModel:
     return HydroWaterNutrientsDownloadModel(
         **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(Watnut, watphy.watnut, fields_to_ignore=['watphy_code'])
+        **get_table_data(
+            HydroWaterNutrientsDownloadModel,
+            Watnut,
+            watphy.watnut
+        )
     )
 
 
@@ -280,8 +325,16 @@ def get_hydro_water_pollution_download_model(
 ) -> HydroWaterPollutionDownloadModel:
     return HydroWaterPollutionDownloadModel(
         **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(Watpol1, watphy.watpol1, fields_to_ignore=['watphy_code']),
-        **get_table_data(Watpol2, watphy.watpol2, fields_to_ignore=['watphy_code'])
+        **get_table_data(
+            HydroWaterPollutionDownloadModel,
+            Watpol1,
+            watphy.watpol1
+        ),
+        **get_table_data(
+            HydroWaterPollutionDownloadModel,
+            Watpol2,
+            watphy.watpol2
+        )
     )
 
 
@@ -309,22 +362,16 @@ def get_hydro_water_physical_download_model(
 ) -> HydroWaterPhysicalDownloadModel:
     return HydroWaterPhysicalDownloadModel(
         **(get_hydro_download_model(station, survey).dict()),
-        **get_table_data(Watphy, watphy, fields_to_ignore=[
-            'instrument',
-            'subdes',
-            'station_id',
-            'device_code',
-            'method_code',
-            'standard_code',
-            'filtered',
-            'sound_flag',
-            'spldattim'
-        ]),
-        instrument=watphy.sampling_device.name if watphy.sampling_device and watphy.sampling_device.name else '',
-        subdes=watphy.subdes if watphy.subdes else '',
+        **get_table_data(
+            HydroWaterPhysicalDownloadModel,
+            Watphy,
+            watphy,
+            fields_to_ignore=[
+                'station_id',
+                'spldattim'
+            ]
+        ),
         spldattim=watphy.spldattim.strftime("%m/%d/%Y %H:%M:%S") if watphy.spldattim else '',
-        filtered=watphy.filtered if watphy.filtered else '',
-        sound_flag=watphy.sound_flag if watphy.sound_flag else ''
     )
 
 
@@ -335,14 +382,15 @@ def get_hydro_sediment_physical_download_model(
 ) -> HydroSedimentPhysicalDownloadModel:
     return HydroSedimentPhysicalDownloadModel(
         **(get_hydro_download_model(station, survey).dict()),
-        **get_table_data(Sedphy, sedphy, fields_to_ignore=[
-            'code',
-            'station_id',
-            'device_code',
-            'method_code',
-            'standard_code',
-            'spldattim'
-        ]),
+        **get_table_data(
+            HydroSedimentPhysicalDownloadModel,
+            Sedphy,
+            sedphy,
+            fields_to_ignore=[
+                'station_id',
+                'spldattim'
+            ]
+        ),
         spldattim=sedphy.spldattim.strftime("%m/%d/%Y %H:%M:%S") if sedphy.spldattim else ''
     )
 
@@ -354,20 +402,36 @@ def get_hydro_sediment_pollution_download_model(
 ) -> HydroSedimentPollutionDownloadModel:
     return HydroSedimentPollutionDownloadModel(
         **(get_hydro_sediment_physical_download_model(sedphy, station, survey).dict()),
-        **get_table_data(Sedpol1, sedphy.sedpol1, fields_to_ignore=['sedphy_code']),
-        **get_table_data(Sedpol2, sedphy.sedpol2, fields_to_ignore=['sedphy_code'])
+        **get_table_data(
+            HydroSedimentPollutionDownloadModel,
+            Sedpol1,
+            sedphy.sedpol1
+        ),
+        **get_table_data(
+            HydroSedimentPollutionDownloadModel,
+            Sedpol2,
+            sedphy.sedpol2
+        )
     )
 
 
 def get_hydro_sediment_chemistry_download_model(
         sedphy: Sedphy,
-        station: Station, 
+        station: Station,
         survey: Survey
 ) -> HydroSedimentChemistryDownloadModel:
     return HydroSedimentChemistryDownloadModel(
         **(get_hydro_sediment_physical_download_model(sedphy, station, survey).dict()),
-        **get_table_data(Sedchem1, sedphy.sedchem1, fields_to_ignore=['sedphy_code']),
-        **get_table_data(Sedchem2, sedphy.sedchem2, fields_to_ignore=['sedphy_code'])
+        **get_table_data(
+            HydroSedimentChemistryDownloadModel,
+            Sedchem1,
+            sedphy.sedchem1
+        ),
+        **get_table_data(
+            HydroSedimentChemistryDownloadModel,
+            Sedchem2,
+            sedphy.sedchem2
+        ),
     )
 
 
@@ -387,12 +451,12 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
     )
 
 
-def get_table_data(db_model, fetched_model, fields_to_ignore: list = None) -> dict:
+def get_table_data(api_model, db_model, fetched_model, fields_to_ignore: list = None) -> dict:
     return {
-        field: getattr(fetched_model, field, 0)
-        if fetched_model and getattr(fetched_model, field, 0) is not None else 0
-        for field in inspect(db_model).columns.keys()
-        if fields_to_ignore is None or not fields_to_ignore.__contains__(field)
+        field_name: getattr(fetched_model, field_name)
+        if fetched_model and getattr(fetched_model, field_name, 0) is not None else 0
+        for field_name, field_info in api_model.__fields__.items()
+        if (fields_to_ignore is None or not fields_to_ignore.__contains__(field_name)) and hasattr(db_model, field_name)
     }
 
 

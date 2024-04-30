@@ -131,7 +131,6 @@ class HydroDownloadModel(BaseModel):
 
 
 class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
-    instrument: str
     subdes: str
     spldattim: str
     spldep: float
@@ -265,3 +264,22 @@ class HydroSedimentChemistryDownloadModel(HydroSedimentPhysicalDownloadModel):
     sodium: float
     strontium: float
     so3: float
+
+
+class HydroWeatherDownloadModel(HydroDownloadModel):
+    nav_equip_type: str
+    atmosph_pres: float
+    surface_tmp: float
+    drybulb: float
+    wetbulb: float
+    cloud: str
+    vis_code: str
+    weather_code: str
+    water_color: float
+    transparency: float
+    wind_dir: float
+    wind_speed: float
+    swell_dir: float
+    swell_height: float
+    swell_period: float
+    dupflag: str

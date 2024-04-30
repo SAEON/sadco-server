@@ -1,22 +1,15 @@
 from datetime import date
 from math import ceil
-from unittest import result
 
-import pandas as pd
-import zipfile
-
-from io import StringIO, BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
-from pydantic.types import Json
-from sqlalchemy import select, exists, func, and_, or_
-from sqlalchemy.orm import load_only, joinedload
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY
+from sqlalchemy import select, func, and_, or_
+from sqlalchemy.orm import joinedload
+from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.api.lib.paging import Page, Paginator
-from sadco.db.models import (Inventory, Planam, Scientists, Institutes, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
-                             Sedphy, Sedpol1, Sedpol2, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, station)
+from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
+                             Sedphy, Sedpol1, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
+                             Weather, Currents, Survey, Station, SamplingDevice, InvStats)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,

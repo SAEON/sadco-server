@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Numeric, String, ForeignKey
+from sqlalchemy.orm import relationship
 
 from sadco.db import Base
 
@@ -23,3 +24,5 @@ class Weather(Base):
     swell_height = Column(Numeric(precision=3, scale=1))
     swell_period = Column(Numeric(precision=38, scale=0))
     dupflag = Column(String(1))
+
+    station = relationship('Station', uselist=False, back_populates='weather')

@@ -33,6 +33,7 @@ class Station(Base):
     # view of associated watphy, sedphy and current entries (one-to-many)
     watphy_list = relationship('Watphy', back_populates='station')
     sedphy_list = relationship('Sedphy', back_populates='station')
+    weather = relationship('Weather', back_populates='station')
     currents = relationship('Currents')
 
     survey = relationship('Survey', uselist=False, back_populates='stations')

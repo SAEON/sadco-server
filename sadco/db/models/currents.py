@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 
 from sadco.db import Base
 
@@ -13,3 +14,5 @@ class Currents(Base):
     current_dir = Column(Numeric(precision=38, scale=0))
     current_speed = Column(Numeric(precision=7, scale=3))
     perc_good = Column(String(20))
+
+    station = relationship('Station', uselist=False, back_populates='currents')
