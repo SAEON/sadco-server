@@ -50,6 +50,8 @@ async def download_survey_data(
             items = get_sediment_pollution_items(survey_id)
         case DataType.SEDIMENTCHEMISTRY:
             items = get_sediment_chemistry_items(survey_id)
+        case DataType.WEATHER:
+            items = get_weather_items(survey_id)
 
     return get_zipped_csv_response(items, survey_id, data_type)
 
@@ -255,7 +257,7 @@ def get_weather_items(survey_id: str) -> list:
         select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
         options(
             joinedload(Survey.stations).
-            joinedload(Station.weather)
+            joinedload(Station.weather_list)
         )
     )
 
@@ -263,22 +265,27 @@ def get_weather_items(survey_id: str) -> list:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return [
-        get_hydro_weather_download_model(row.Survey, station).dict()
+        get_hydro_weather_download_model(row.Survey, station, weather).dict()
         for row in results
         for station in row.Survey.stations
+        for weather in station.weather_list
     ]
 
 
 def get_hydro_weather_download_model(
         survey: Survey,
-        station: Station
+        station: Station,
+        weather: Weather
 ) -> HydroWeatherDownloadModel:
     return HydroWeatherDownloadModel(
-        **get_hydro_download_model(survey, station).dict(),
+        **get_hydro_download_model(station, survey).dict(),
         **get_table_data(
             HydroWeatherDownloadModel,
             Weather,
-            station.weather
+            weather,
+            fields_to_ignore=[
+                'station_id'
+            ]
         )
     )
 
@@ -438,8 +445,8 @@ def get_hydro_sediment_chemistry_download_model(
 def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadModel:
     return HydroDownloadModel(
         survey_id=station.survey_id,
-        latitude=station.latitude,
-        longitude=station.longitude,
+        latitude=station.latitude if station.latitude else '',
+        longitude=station.longitude if station.longitude else '',
         year=station.date_start.year,
         month=station.date_start.month,
         day=station.date_start.day,
@@ -453,7 +460,9 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
 
 def get_table_data(api_model, db_model, fetched_model, fields_to_ignore: list = None) -> dict:
     return {
-        field_name: getattr(fetched_model, field_name)
+        field_name: getattr(fetched_model, field_name) if (
+                    fetched_model and getattr(fetched_model, field_name, 0) is not None) else (
+            0 if field_info.type_ in (int, float) else '')
         if fetched_model and getattr(fetched_model, field_name, 0) is not None else 0
         for field_name, field_info in api_model.__fields__.items()
         if (fields_to_ignore is None or not fields_to_ignore.__contains__(field_name)) and hasattr(db_model, field_name)

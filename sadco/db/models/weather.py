@@ -25,4 +25,4 @@ class Weather(Base):
     swell_period = Column(Numeric(precision=38, scale=0))
     dupflag = Column(String(1))
 
-    station = relationship('Station', uselist=False, back_populates='weather')
+    station = relationship('Station', uselist=False, back_populates='weather_list')
