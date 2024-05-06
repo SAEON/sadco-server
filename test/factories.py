@@ -8,7 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import sadco.db
 from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
     SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
-    Sedpol1, Sedpol2, InvStats
+    Sedpol1, Sedpol2, InvStats, Weather, Currents
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -86,6 +86,44 @@ class StatusModeFactory(SADCOModelFactory):
     flagging = factory.Faker('random_element', elements=('closed', 'open'))
     quality = factory.Faker('random_element',
                             elements=('unchecked', 'checked', 'bad', 'unknown', 'good', 'bad', 'unknown', 'good'))
+
+
+class CurrentsFactory(SADCOModelFactory):
+    class Meta:
+        model = Currents
+
+    subdes = factory.Faker('text', max_nb_chars=10)
+    spldattim = factory.Faker('date')
+    spldep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    current_dir = factory.Faker('random_number', digits=randint(1, 38))
+    current_speed = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    perc_good = factory.Faker('text', max_nb_chars=20)
+
+    station = factory.SubFactory('factories.StationFactory', sedphy_list=None)
+
+
+class WeatherFactory(SADCOModelFactory):
+    class Meta:
+        model = Weather
+
+    nav_equip_type = factory.Faker('text', max_nb_chars=10)
+    atmosph_pres = factory.LazyFunction(lambda: uniform(0, 9999.9))
+    surface_tmp = factory.LazyFunction(lambda: uniform(0, 99.9))
+    drybulb = factory.LazyFunction(lambda: uniform(0, 99.9))
+    wetbulb = factory.LazyFunction(lambda: uniform(0, 99.9))
+    cloud = factory.Faker('text', max_nb_chars=5)
+    vis_code = factory.Faker('lexify', text='??', letters='ABCDE-12345')
+    weather_code = factory.Faker('lexify', text='??', letters='ABCDE-12345')
+    water_color = factory.Faker('random_number', digits=randint(1, 38))
+    transparency = factory.Faker('random_number', digits=randint(1, 38))
+    wind_dir = factory.Faker('random_number', digits=randint(1, 38))
+    wind_speed = factory.LazyFunction(lambda: uniform(0, 99.9))
+    swell_dir = factory.Faker('random_number', digits=randint(1, 38))
+    swell_height = factory.LazyFunction(lambda: uniform(0, 99.9))
+    swell_period = factory.Faker('random_number', digits=randint(1, 38))
+    dupflag = factory.LazyFunction(lambda: choice(('Y', 'N')))
+
+    station = factory.SubFactory('factories.StationFactory', sedphy_list=None)
 
 
 class Sedpol1Factory(SADCOModelFactory):

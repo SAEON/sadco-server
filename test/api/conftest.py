@@ -3,7 +3,8 @@ from random import randint, choice
 
 from test.factories import Watchem1Factory, Watchem2Factory, Watpol1Factory, Watpol2Factory, WatcurrentsFactory, \
     WatnutFactory, WatphyFactory, StationFactory, SurveyFactory, InventoryFactory, SedphyFactory, Sedchem2Factory, \
-    Sedchem1Factory, Sedpol2Factory, Sedpol1Factory, PlanamFactory, InstitutesFactory, ScientistsFactory
+    Sedchem1Factory, Sedpol2Factory, Sedpol1Factory, PlanamFactory, InstitutesFactory, ScientistsFactory, \
+    WeatherFactory, CurrentsFactory
 
 from starlette.testclient import TestClient
 import pytest
@@ -56,6 +57,8 @@ def set_station_batch(survey):
         station = StationFactory.create(watphy_list=None, survey=survey)
         set_watphy_batch(station)
         set_sedphy_batch(station)
+        WeatherFactory(station=station)
+        CurrentsFactory(station=station)
 
 
 def set_watphy_batch(station):
@@ -79,3 +82,4 @@ def set_sedphy_batch(station):
         Sedpol2Factory(sedphy=sedphy) if choice([True, False]) else None
         Sedchem1Factory(sedphy=sedphy) if choice([True, False]) else None
         Sedchem2Factory(sedphy=sedphy) if choice([True, False]) else None
+
