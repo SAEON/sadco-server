@@ -459,11 +459,17 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
 
 
 def get_table_data(api_model, db_model, fetched_model, fields_to_ignore: list = None) -> dict:
+    """
+    Builds and returns a dictionary of the fields from an api model and its respective db value.
+    :param api_model: The api model whose fields will be iterated through.
+    :param db_model: The db model whose field names will be compared.
+    :param fetched_model: fetched model whose values will be used.
+    :param fields_to_ignore: fields to ignore.
+    """
     return {
         field_name: getattr(fetched_model, field_name) if (
-                    fetched_model and getattr(fetched_model, field_name, 0) is not None) else (
+                fetched_model and getattr(fetched_model, field_name, None) is not None) else (
             0 if field_info.type_ in (int, float) else '')
-        if fetched_model and getattr(fetched_model, field_name, 0) is not None else 0
         for field_name, field_info in api_model.__fields__.items()
         if (fields_to_ignore is None or not fields_to_ignore.__contains__(field_name)) and hasattr(db_model, field_name)
     }
