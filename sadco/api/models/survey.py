@@ -283,3 +283,12 @@ class HydroWeatherDownloadModel(HydroDownloadModel):
     swell_height: float
     swell_period: float
     dupflag: str
+
+
+class HydroCurrentsDownloadModel(HydroDownloadModel):
+    subdes = str
+    spldattim = datetime
+    spldep = float
+    current_dir = float
+    current_speed = float
+    perc_good = str

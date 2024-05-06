@@ -8,9 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
+from sadco.api.models.survey import HydroCurrentsDownloadModel
 from sadco.const import DataType
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Watchem1, Watchem2, Watnut, Watpol1, Watpol2,
-                             Sedpol1, Sedpol2, Sedchem1, Sedchem2)
+                             Sedpol1, Sedpol2, Sedchem1, Sedchem2, Currents)
 
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
@@ -31,29 +32,33 @@ async def download_survey_data(
         survey_id: str,
         data_type: str = Query(None, title='Data Type')
 ):
-    items = []
-
-    match data_type:
-        case DataType.WATER:
-            items = get_water_items(survey_id)
-        case DataType.WATERNUTRIENTSANDCHEMISTRY:
-            items = get_water_nutrients_and_chemistry_items(survey_id)
-        case DataType.WATERPOLLUTION:
-            items = get_water_pollution_items(survey_id)
-        case DataType.WATERCHEMISTRY:
-            items = get_water_chemistry_items(survey_id)
-        case DataType.WATERNUTRIENTS:
-            items = get_water_nutrients_items(survey_id)
-        case DataType.SEDIMENT:
-            items = get_sediment_items(survey_id)
-        case DataType.SEDIMENTPOLLUTION:
-            items = get_sediment_pollution_items(survey_id)
-        case DataType.SEDIMENTCHEMISTRY:
-            items = get_sediment_chemistry_items(survey_id)
-        case DataType.WEATHER:
-            items = get_weather_items(survey_id)
+    items = get_data_type_items(data_type, survey_id)
 
     return get_zipped_csv_response(items, survey_id, data_type)
+
+
+def get_data_type_items(data_type: str, survey_id: str) -> list:
+    match data_type:
+        case DataType.WATER:
+            return get_water_items(survey_id)
+        case DataType.WATERNUTRIENTSANDCHEMISTRY:
+            return get_water_nutrients_and_chemistry_items(survey_id)
+        case DataType.WATERPOLLUTION:
+            return get_water_pollution_items(survey_id)
+        case DataType.WATERCHEMISTRY:
+            return get_water_chemistry_items(survey_id)
+        case DataType.WATERNUTRIENTS:
+            return get_water_nutrients_items(survey_id)
+        case DataType.SEDIMENT:
+            return get_sediment_items(survey_id)
+        case DataType.SEDIMENTPOLLUTION:
+            return get_sediment_pollution_items(survey_id)
+        case DataType.SEDIMENTCHEMISTRY:
+            return get_sediment_chemistry_items(survey_id)
+        case DataType.WEATHER:
+            return get_weather_items(survey_id)
+        case DataType.CURRENTS:
+            return get_currents_items(survey_id)
 
 
 def get_water_items(survey_id: str) -> list:
@@ -272,6 +277,26 @@ def get_weather_items(survey_id: str) -> list:
     ]
 
 
+def get_currents_items(survey_id: str) -> list:
+    stmt = (
+        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
+        options(
+            joinedload(Survey.stations).
+            joinedload(Station.currents)
+        )
+    )
+
+    if not (results := Session.execute(stmt).unique()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return [
+        get_hydro_currents_download_model(row.Survey, station, currents).dict()
+        for row in results
+        for station in row.Survey.stations
+        for currents in station.currents
+    ]
+
+
 def get_hydro_weather_download_model(
         survey: Survey,
         station: Station,
@@ -439,6 +464,24 @@ def get_hydro_sediment_chemistry_download_model(
             Sedchem2,
             sedphy.sedchem2
         ),
+    )
+
+
+def get_hydro_currents_download_model(
+        survey: Survey,
+        station: Station,
+        currents: Currents
+) -> HydroCurrentsDownloadModel:
+    return HydroCurrentsDownloadModel(
+        **(get_hydro_download_model(station, survey).dict()),
+        **get_table_data(
+            HydroCurrentsDownloadModel,
+            Currents,
+            currents,
+            fields_to_ignore=[
+                'station_id'
+            ]
+        )
     )
 
 
