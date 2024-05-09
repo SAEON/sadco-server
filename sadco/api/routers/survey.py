@@ -279,32 +279,34 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
     """
     data_types_model = DataTypesModel()
 
-    if inventory_statistics.watphy_cnt > 0:
+    if inventory_statistics.watphy_cnt and inventory_statistics.watphy_cnt > 0:
         water_model = WaterModel(
             record_count=inventory_statistics.watphy_cnt
         )
 
-        if inventory_statistics.watchem1_cnt > 0 or inventory_statistics.watchem2_cnt > 0:
+        if (inventory_statistics.watchem1_cnt and inventory_statistics.watchem1_cnt > 0) or (
+                inventory_statistics.watchem2_cnt and inventory_statistics.watchem2_cnt > 0):
             water_model.water_chemistry = WaterChemistryModel(
                 record_count=max(inventory_statistics.watchem1_cnt, inventory_statistics.watchem2_cnt)
             )
 
-        if inventory_statistics.watpol1_cnt > 0 or inventory_statistics.watpol2_cnt > 0:
+        if (inventory_statistics.watpol1_cnt and inventory_statistics.watpol1_cnt > 0) or (
+                inventory_statistics.watpol2_cnt and inventory_statistics.watpol2_cnt > 0):
             water_model.water_pollution = WaterPollutionModel(
                 record_count=max(inventory_statistics.watpol1_cnt, inventory_statistics.watpol2_cnt)
             )
 
-        if inventory_statistics.watcurrents_cnt > 0:
+        if inventory_statistics.watcurrents_cnt and inventory_statistics.watcurrents_cnt > 0:
             water_model.water_currents = WaterCurrentsModel(
                 record_count=inventory_statistics.watcurrents_cnt
             )
 
-        if inventory_statistics.watnut_cnt > 0:
+        if inventory_statistics.watnut_cnt and inventory_statistics.watnut_cnt > 0:
             water_model.water_nutrients = WaterNutrientsModel(
                 record_count=inventory_statistics.watnut_cnt
             )
 
-        if inventory_statistics.watcurrents_cnt > 0:
+        if inventory_statistics.watcurrents_cnt and inventory_statistics.watcurrents_cnt > 0:
             water_model.water_currents = WaterCurrentsModel(
                 record_count=inventory_statistics.watcurrents_cnt
             )
