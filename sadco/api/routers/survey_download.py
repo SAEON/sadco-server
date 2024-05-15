@@ -525,11 +525,11 @@ def get_zipped_csv_response(items, survey_id, data_type) -> StreamingResponse:
     :param survey_id: The id of the applicable survey for file naming purposes
     :param data_type: The data type requested for file naming purposes
     """
-    data = pd.DataFrame(items)
+    data_frame = pd.DataFrame(items)
 
     stream = StringIO()
 
-    data.to_csv(stream, index=False)
+    data_frame.to_csv(stream, index=False)
 
     zip_buffer = BytesIO()
 
