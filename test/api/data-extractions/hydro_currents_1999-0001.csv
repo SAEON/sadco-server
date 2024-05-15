@@ -1,0 +1,3 @@
+survey_id,latitude,longitude,year,month,day,time,station_name,station_id,platform_name,max_sampling_depth
+1999/0001,30.0,72.0,1999,1,1,,UW,22BG,ArcticXP,50.0
+1999/0001,30.0,72.0,1999,1,1,,UW,22BG,ArcticXP,50.0

@@ -1,0 +1,2 @@
+survey_id,latitude,longitude,year,month,day,time,station_name,station_id,platform_name,max_sampling_depth,nav_equip_type,atmosph_pres,surface_tmp,drybulb,wetbulb,cloud,vis_code,weather_code,water_color,transparency,wind_dir,wind_speed,swell_dir,swell_height,swell_period,dupflag
+1999/0001,30.0,72.0,1999,1,1,,UW,22BG,ArcticXP,50.0,SCP,12.2,16.1,0.9,1.1,AWP,MO,VC,255.0,1.0,186.0,16.4,184.0,1.1,16.0,N
