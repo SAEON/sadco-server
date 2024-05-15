@@ -8,7 +8,8 @@ import pandas as pd
 import io
 
 from test.factories import SurveyFactory, StationFactory, WatphyFactory, Watchem1Factory, Watchem2Factory, \
-    Watpol1Factory, Watpol2Factory, WatnutFactory, InventoryFactory, WatchlFactory, CurrentsFactory, WeatherFactory
+    Watpol1Factory, Watpol2Factory, WatnutFactory, InventoryFactory, WatchlFactory, CurrentsFactory, WeatherFactory, \
+    SedphyFactory, Sedpol1Factory, Sedpol2Factory, Sedchem1Factory, Sedchem2Factory
 
 TEST_SURVEY_ID: str = '1999/0001'
 
@@ -29,6 +30,7 @@ def survey_download():
 def set_download_station(survey):
     station = StationFactory.create(
         watphy_list=None,
+        sedphy_list=None,
         survey=survey,
         station_id='22BG',
         latitude=30,
@@ -40,6 +42,7 @@ def set_download_station(survey):
     set_current_records(station)
     set_weather_records(station)
     set_watphy_records(station)
+    set_sedphy_record(station)
     return survey
 
 
@@ -279,6 +282,148 @@ def set_watphy_records(station):
     )
 
 
+def set_sedphy_record(station):
+    sedphy = SedphyFactory.create(
+        sedchem1=None,
+        sedchem2=None,
+        sedpol1=None,
+        sedpol2=None,
+        station=station,
+        subdes=5.5,
+        spldattim='1990-01-01 00:00:00',
+        spldep=None,
+        spldis=10.6,
+        splvol=None,
+        sievsz=6.7,
+        kurt=None,
+        skew=1.1,
+        meanpz=None,
+        medipz=4.9,
+        pctsat=None,
+        pctsil=9.81,
+        permty=None,
+        porsty=5.51,
+        dwf=None,
+        cod=17,
+    )
+
+    sedphy_2 = SedphyFactory.create(
+        sedchem1=None,
+        sedchem2=None,
+        sedpol1=None,
+        sedpol2=None,
+        station=station,
+        subdes=5.5,
+        spldattim='1990-01-01 00:00:00',
+        spldep=12.2,
+        spldis=None,
+        splvol=2.33,
+        sievsz=None,
+        kurt=26.7,
+        skew=None,
+        meanpz=67.7,
+        medipz=None,
+        pctsat=2.7,
+        pctsil=None,
+        permty=3.6,
+        porsty=None,
+        dwf=45.2,
+        cod=None,
+    )
+
+    Sedpol1Factory(
+        sedphy=sedphy,
+        arsenic=None,
+        cadmium=43.1,
+        chromium=None,
+        cobalt=32.8,
+        copper=None,
+        iron=59.2,
+        lead=None,
+        manganese=80.6,
+        mercury=None,
+        nickel=78.3,
+        selenium=None,
+        zinc=15.9,
+    )
+
+    Sedpol1Factory(
+        sedphy=sedphy_2,
+        arsenic=18.9,
+        cadmium=None,
+        chromium=67.5,
+        cobalt=None,
+        copper=91.4,
+        iron=None,
+        lead=12.7,
+        manganese=None,
+        mercury=25.1,
+        nickel=None,
+        selenium=40.2,
+        zinc=None,
+    )
+
+    Sedpol2Factory(
+        sedphy=sedphy,
+        aluminium=64.1,
+        antimony=None,
+        bismuth=21.2,
+        molybdenum=None,
+        silver=56.3,
+        titanium=None,
+        vanadium=72.8,
+    )
+
+    Sedpol2Factory(
+        sedphy=sedphy_2,
+        aluminium=None,
+        antimony=39.5,
+        bismuth=None,
+        molybdenum=87.9,
+        silver=None,
+        titanium=10.4,
+        vanadium=None,
+    )
+
+    Sedchem1Factory(
+        sedphy=sedphy,
+        fluoride=35.7,
+        kjn=None,
+        oxa=82.1,
+        toc=None,
+        ptot=90.5,
+    )
+
+    Sedchem1Factory(
+        sedphy=sedphy_2,
+        fluoride=None,
+        kjn=14.2,
+        oxa=None,
+        toc=61.8,
+        ptot=None,
+    )
+
+    Sedchem2Factory(
+        sedphy=sedphy,
+        calcium=75.2,
+        magnesium=None,
+        potassium=29.1,
+        sodium=None,
+        strontium=53.8,
+        so3=None,
+    )
+
+    Sedchem2Factory(
+        sedphy=sedphy_2,
+        calcium=None,
+        magnesium=48.6,
+        potassium=None,
+        sodium=17.3,
+        strontium=None,
+        so3=60.9,
+    )
+
+
 def test_download_all_data_types(api, survey_download):
     route = '/survey/download/hydro/{}'.format(survey_download.survey_id.replace('/', '-'))
 
@@ -290,6 +435,9 @@ def test_download_all_data_types(api, survey_download):
         DataType.WATERNUTRIENTSANDCHEMISTRY.value,
         DataType.CURRENTS.value,
         DataType.WEATHER.value,
+        DataType.SEDIMENT.value,
+        DataType.SEDIMENTCHEMISTRY.value,
+        DataType.SEDIMENTPOLLUTION.value
     ]
 
     for data_type in data_types:
