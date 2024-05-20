@@ -346,7 +346,9 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
 
 
 def get_hydro_current_count(survey_id: str) -> int:
-    """Get the number of Current records for a given Hydro Survey"""
+    """
+    Get the number of Current records for a given Hydro Survey
+    """
     stmt = (
         select(
             func.count(Currents.station_id).label('currents_count')

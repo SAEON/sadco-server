@@ -10,16 +10,17 @@ engine = create_engine(
     future=True,
 )
 
-Session = scoped_session(sessionmaker(
-    bind=engine,
-    autocommit=False,
-    autoflush=False,
-    future=True,
-))
+Session = scoped_session(
+    sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
+        future=True,
+    )
+)
 
 
 class _Base:
-
     __table_args__ = {"schema": "sadco"}
 
     def save(self):
