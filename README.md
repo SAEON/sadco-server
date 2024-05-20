@@ -4,3 +4,8 @@
 [![codecov](https://codecov.io/gh/SAEON/sadco-server/branch/main/graph/badge.svg)](https://codecov.io/gh/SAEON/sadco-server)
 
 API and data access layer for the Southern African Data Centre for Oceanography.
+
+## Server Components
+
+* [SADCO API](sadco/api)
+* [SADCO Database](sadco/db)
