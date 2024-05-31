@@ -7,14 +7,14 @@ from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.api.lib.paging import Page, Paginator
-from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2,
+from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData,
                              Sedphy, Sedpol1, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents, Survey, Station, SamplingDevice, InvStats)
+                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, CurDepth, CurMooring)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
-                              HydroSurveyModel)
+                              HydroSurveyModel, CurrentDepthModel, CurrentsSurveyModel)
 
 from sadco.db import Session
 
@@ -223,7 +223,7 @@ def get_chief_scientist(inventory: Inventory) -> str:
     '/hydro/{survey_id}',
     response_model=HydroSurveyModel
 )
-async def get_survey(
+async def get_hydro_survey(
         survey_id: str
 ):
     stmt = (
@@ -248,6 +248,18 @@ def get_survey_model(inventory: Inventory) -> SurveyModel:
     """
     Get the generic survey model
     """
+    station = [
+        StationModel(
+            latitude=-station.latitude,
+            longitude=station.longitude
+        ) for station in inventory.survey.stations
+    ] if inventory.survey else [
+        StationModel(
+            latitude=-inventory.lat_north,
+            longitude=inventory.long_east
+        )
+    ]
+
     return SurveyModel(
         id=inventory.survey_id,
         project_name=inventory.project_name,
@@ -263,12 +275,7 @@ def get_survey_model(inventory: Inventory) -> SurveyModel:
         long_west=inventory.long_west,
         long_east=inventory.long_east,
         survey_type=inventory.survey_type.name,
-        stations=[
-            StationModel(
-                latitude=-station.latitude,  # Use negation as the value from the db is South
-                longitude=station.longitude
-            ) for station in inventory.survey.stations
-        ]
+        stations=station
     )
 
 
@@ -362,6 +369,61 @@ def get_hydro_current_count(survey_id: str) -> int:
     result = Session.execute(stmt).one_or_none()
 
     return result.currents_count
+
+
+@router.get(
+    '/currents/{survey_id}',
+    response_model=CurrentsSurveyModel
+)
+async def get_currents_survey(
+        survey_id: str
+):
+    stmt = (
+        select(
+            Inventory
+        ).
+        filter(
+            Inventory.survey_id == survey_id.replace('-', '/')
+        )
+    )
+
+    if not (result := Session.execute(stmt).one_or_none()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return CurrentsSurveyModel(
+        **get_survey_model(result.Inventory).dict(),
+        mooring_details=get_mooring_details(result.Inventory.cur_moorings)
+    )
+
+
+def get_mooring_details(current_moorings: list[CurMooring]) -> list[CurrentDepthModel]:
+    return [
+        CurrentDepthModel(
+            depth=row.CurDepth.spldep,
+            instrument_number=row.CurDepth.instrument_number,
+            parameters=row.CurDepth.parameters,
+            date_time_start=row.CurDepth.date_time_start,
+            date_time_end=row.CurDepth.date_time_end,
+            interval=row.CurDepth.time_interval,
+            records=row.cur_data_records,
+        )
+        for current_mooring in current_moorings
+        for row in get_current_depths(current_mooring.code)
+    ]
+
+
+def get_current_depths(cur_mooring_id: int) -> any:
+    query = (
+        Session.query(
+            CurDepth,
+            func.count(CurData.code).label('cur_data_records')
+        ).
+        join(CurData, CurDepth.code == CurData.depth_code).
+        where(CurDepth.mooring_code == cur_mooring_id).
+        group_by(CurDepth.code)
+    )
+
+    return query.all()
 
 
 def get_data_types_manually(survey_id: str) -> DataTypesModel:  # pragma: no cover

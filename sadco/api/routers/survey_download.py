@@ -74,10 +74,10 @@ def get_water_items(survey_id: str) -> list:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return [
-        get_hydro_water_physical_download_model(sedphy, station, row.Survey).dict()
+        get_hydro_water_physical_download_model(watphy, station, row.Survey).dict()
         for row in results
         for station in row.Survey.stations
-        for sedphy in station.watphy_list
+        for watphy in station.watphy_list
     ]
 
 
@@ -488,8 +488,8 @@ def get_hydro_currents_download_model(
 def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadModel:
     return HydroDownloadModel(
         survey_id=station.survey_id,
-        latitude=station.latitude if station.latitude else '',
-        longitude=station.longitude if station.longitude else '',
+        latitude=station.latitude if station.latitude else 0,
+        longitude=station.longitude if station.longitude else 0,
         year=station.date_start.year,
         month=station.date_start.month,
         day=station.date_start.day,

@@ -44,6 +44,7 @@ class Inventory(Base):
     data_available = Column(String(1))
 
     survey = relationship('Survey', uselist=False, back_populates='inventory')
+    cur_moorings = relationship('CurMooring', back_populates='inventory')
     planam = relationship('Planam', uselist=False)
     institute = relationship('Institutes', uselist=False)
     survey_type = relationship('SurveyType', uselist=False)

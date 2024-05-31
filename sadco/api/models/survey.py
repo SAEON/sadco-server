@@ -95,6 +95,21 @@ class HydroSurveyModel(SurveyModel):
     data_types: Optional[DataTypesModel]
 
 
+class CurrentDepthModel(BaseModel):
+    depth: float
+    instrument_number: int
+    parameters: str
+    date_time_start: date
+    date_time_end: date
+    interval: int
+    records: int # number of cur_data
+    quality_control: Optional[str] = 'Yes'
+
+
+class CurrentsSurveyModel(SurveyModel):
+    mooring_details: list[CurrentDepthModel]
+
+
 class SamplingDeviceModel(BaseModel):
     code: int
     name: str

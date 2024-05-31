@@ -19,3 +19,6 @@ from .currents import Currents
 from .weather import Weather
 from .status_mode import StatusMode
 from .inv_stats import InvStats
+from .cur_depth import CurDepth
+from .cur_mooring import CurMooring
+from .cur_data import CurData
