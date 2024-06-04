@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey
+from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from sadco.db import Base
@@ -8,8 +8,8 @@ class CurDepth(Base):
     __tablename__ = 'cur_depth'
 
     survey_id = Column(String(9))
-    code = Column(Numeric(38, 0), nullable=False, primary_key=True)
-    mooring_code = Column(Numeric(38, 0), ForeignKey(column='sadco.cur_mooring.code'), nullable=False)
+    code = Column(Integer, nullable=False, primary_key=True)
+    mooring_code = Column(Integer, ForeignKey(column='sadco.cur_mooring.code'), nullable=False)
     spldep = Column(Numeric(6, 2))
     instrument_number = Column(Numeric(38, 0))
     deployment_number = Column(String(20))

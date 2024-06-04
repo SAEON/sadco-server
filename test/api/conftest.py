@@ -4,7 +4,7 @@ from random import randint, choice
 from test.factories import Watchem1Factory, Watchem2Factory, Watpol1Factory, Watpol2Factory, WatcurrentsFactory, \
     WatnutFactory, WatphyFactory, StationFactory, SurveyFactory, InventoryFactory, SedphyFactory, Sedchem2Factory, \
     Sedchem1Factory, Sedpol2Factory, Sedpol1Factory, PlanamFactory, InstitutesFactory, ScientistsFactory, \
-    WeatherFactory, CurrentsFactory
+    WeatherFactory, CurrentsFactory, CurrentMooringFactory, CurrentDepthFactory, CurrentDataFactory
 
 from starlette.testclient import TestClient
 import pytest
@@ -42,7 +42,7 @@ def inventories(planam, institute):
 
 @pytest.fixture
 def inventory():
-    return InventoryFactory.create(survey=None)
+    return InventoryFactory.create(survey=None, cur_moorings=None)
 
 
 @pytest.fixture
@@ -50,6 +50,13 @@ def survey(inventory):
     survey = SurveyFactory.create(survey_id=inventory.survey_id, stations=None, inventory=inventory)
     set_station_batch(survey)
     return survey
+
+
+@pytest.fixture
+def current_mooring(inventory):
+    current_mooring = CurrentMooringFactory.create(inventory=inventory)
+    set_current_depth_batch(current_mooring)
+    return current_mooring
 
 
 def set_station_batch(survey):
@@ -82,4 +89,16 @@ def set_sedphy_batch(station):
         Sedpol2Factory(sedphy=sedphy) if choice([True, False]) else None
         Sedchem1Factory(sedphy=sedphy) if choice([True, False]) else None
         Sedchem2Factory(sedphy=sedphy) if choice([True, False]) else None
+
+
+def set_current_depth_batch(current_mooring):
+    for _ in range(randint(1, 5)):
+        current_depth = CurrentDepthFactory.create(cur_mooring=current_mooring)
+        set_current_data_batch(current_depth)
+
+
+def set_current_data_batch(current_depth):
+    for _ in range(randint(1, 10)):
+        CurrentDataFactory.create(cur_depth=current_depth)
+
 

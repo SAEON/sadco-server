@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey
+from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from sadco.db import Base
@@ -7,7 +7,7 @@ from sadco.db import Base
 class CurMooring(Base):
     __tablename__ = 'cur_mooring'
 
-    code = Column(Numeric(38, 0), nullable=False, primary_key=True)
+    code = Column(Integer, nullable=False, primary_key=True)
     client_code = Column(Numeric(38, 0), nullable=False)
     planam_code = Column(Numeric(38, 0))
     stnnam = Column(String(30))

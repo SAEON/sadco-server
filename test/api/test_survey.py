@@ -161,7 +161,7 @@ def test_search_survey_type(api, inventory):
         assert fetched_survey_type['code'] == survey_type.code
 
 
-def test_fetch_survey(api, survey):
+def test_fetch_hydro_survey(api, survey):
     route = '/survey/hydro/{}'.format(survey.survey_id)
 
     r = api.get(route)
@@ -190,6 +190,19 @@ def test_fetch_survey(api, survey):
            (sediment_data_type['record_count'],
             sediment_data_type['sediment_chemistry']['record_count'],
             sediment_data_type['sediment_pollution']['record_count'])
+
+
+def test_fetch_currents_survey(api, current_mooring):
+    route = '/survey/currents/{}'.format(current_mooring.survey_id)
+
+    r = api.get(route)
+    json = r.json()
+
+    assert r.status_code == 200
+
+    current_depths = json['mooring_details']
+
+    assert len(current_depths) == len(current_mooring.cur_depths)
 
 
 

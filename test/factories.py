@@ -8,7 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import sadco.db
 from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
     SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
-    Sedpol1, Sedpol2, InvStats, Weather, Currents
+    Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -86,6 +86,70 @@ class StatusModeFactory(SADCOModelFactory):
     flagging = factory.Faker('random_element', elements=('closed', 'open'))
     quality = factory.Faker('random_element',
                             elements=('unchecked', 'checked', 'bad', 'unknown', 'good', 'bad', 'unknown', 'good'))
+
+
+class CurrentDataFactory(SADCOModelFactory):
+    class Meta:
+        model = CurData
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    datetime = factory.Faker('date')
+    speed = factory.Faker('random_number', digits=randint(1, 4))
+    direction = factory.Faker('random_number', digits=randint(1, 4))
+    temperature = factory.Faker('random_number', digits=randint(1, 2))
+    vert_velocity = factory.Faker('random_number', digits=randint(1, 2))
+    f_speed_9 = factory.Faker('random_number', digits=randint(1, 2))
+    f_direction_9 = factory.Faker('random_number', digits=randint(1, 4))
+    f_speed_14 = factory.Faker('random_number', digits=randint(1, 2))
+    f_direction_14 = factory.Faker('random_number', digits=randint(1, 4))
+    pressure = factory.Faker('random_number', digits=randint(1, 4))
+
+    cur_depth = factory.SubFactory('factories.CurrentDepthFactory', cur_data_list=None)
+
+
+class CurrentDepthFactory(SADCOModelFactory):
+    class Meta:
+        model = CurDepth
+
+    survey_id = factory.SelfAttribute('cur_mooring.survey_id')
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    spldep = factory.Faker('random_number', digits=randint(1, 4))
+    instrument_number = factory.Faker('random_number', digits=randint(1, 30))
+    deployment_number = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
+    date_time_start = factory.Faker('date')
+    date_time_end = factory.Faker('date')
+    time_interval = factory.Faker('random_number', digits=randint(1, 30))
+    number_of_records = factory.Faker('random_number', digits=randint(1, 30))
+    passkey = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
+    date_loaded = factory.Faker('date')
+    parameters = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
+
+    cur_mooring = factory.SubFactory('factories.CurrentMooringFactory', cur_depths=[])
+    cur_data_list = factory.RelatedFactory(CurrentDataFactory, factory_related_name='cur_depth')
+
+
+class CurrentMooringFactory(SADCOModelFactory):
+    class Meta:
+        model = CurMooring
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    client_code = factory.Faker('random_number', digits=randint(1, 30))
+    planam_code = factory.Faker('random_number', digits=randint(1, 30))
+    stnnam = factory.Faker('random_number', digits=randint(1, 30))
+    arenam = factory.Faker('random_number', digits=randint(1, 30))
+    description = factory.Faker('text', max_nb_chars=70)
+    latitude = factory.Faker('random_number', digits=randint(1, 2))
+    longitude = factory.Faker('random_number', digits=randint(1, 3))
+    stndep = factory.Faker('random_number', digits=randint(1, 5))
+    date_time_start = factory.Faker('date')
+    date_time_end = factory.Faker('date')
+    number_of_depths = factory.Faker('random_number', digits=randint(1, 30))
+    publication_ref = factory.Faker('random_number', digits=randint(1, 30))
+    survey_id = factory.SelfAttribute('inventory.survey_id')
+    prjnam = factory.Faker('text', max_nb_chars=100)
+
+    cur_depths = factory.RelatedFactory(CurrentDepthFactory, factory_related_name='cur_mooring')
+    inventory = factory.SubFactory('factories.InventoryFactory', cur_moorings=None)
 
 
 class CurrentsFactory(SADCOModelFactory):
@@ -512,6 +576,7 @@ class InventoryFactory(SADCOModelFactory):
 
     survey = factory.RelatedFactory(SurveyFactory, factory_related_name='inventory')
     planam = factory.SubFactory(PlanamFactory)
+    cur_moorings = factory.RelatedFactory(CurrentMooringFactory, factory_related_name='inventory')
     institute = factory.SubFactory(InstitutesFactory)
     survey_type = factory.SubFactory(SurveyTypeFactory)
     scientist_1 = factory.SubFactory(ScientistsFactory)
