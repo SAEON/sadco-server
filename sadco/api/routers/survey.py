@@ -16,14 +16,17 @@ from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, Wa
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
                               HydroSurveyModel, CurrentDepthModel, CurrentsSurveyModel)
 
+from sadco.api.lib.auth import Authorize
 from sadco.db import Session
+from sadco.const import SADCOScope
 
 router = APIRouter()
 
 
 @router.get(
     '/surveys',
-    response_model=Page[SurveyListItemModel]
+    response_model=Page[SurveyListItemModel],
+    dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
 )
 async def list_surveys(
         paginator: Paginator = Depends(),
@@ -60,7 +63,8 @@ async def list_surveys(
 
 @router.get(
     '/surveys/search',
-    response_model=SearchResult
+    response_model=SearchResult,
+    dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
 )
 async def list_surveys(
         survey_id: str = Query(None, title='Survey ID'),
@@ -221,7 +225,8 @@ def get_chief_scientist(inventory: Inventory) -> str:
 
 @router.get(
     '/hydro/{survey_id}',
-    response_model=HydroSurveyModel
+    response_model=HydroSurveyModel,
+    dependencies=[Depends(Authorize(SADCOScope.HYDRO_READ))],
 )
 async def get_hydro_survey(
         survey_id: str
@@ -373,7 +378,8 @@ def get_hydro_current_count(survey_id: str) -> int:
 
 @router.get(
     '/currents/{survey_id}',
-    response_model=CurrentsSurveyModel
+    response_model=CurrentsSurveyModel,
+    dependencies=[Depends(Authorize(SADCOScope.CURRENTS_READ))],
 )
 async def get_currents_survey(
         survey_id: str
