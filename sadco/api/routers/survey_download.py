@@ -8,16 +8,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.api.models.survey import HydroCurrentsDownloadModel
 from sadco.const import DataType
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Watchem1, Watchem2, Watnut, Watpol1, Watpol2,
-                             Sedpol1, Sedpol2, Sedchem1, Sedchem2, Currents)
+                             Sedpol1, Sedpol2, Sedchem1, Sedchem2, Currents, CurMooring, CurDepth, CurData)
 
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
-                              HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel)
+                              HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
+                              HydroCurrentsDownloadModel, CurrentsDownloadModel)
 
 from sadco.db import Session
 
@@ -25,10 +25,65 @@ router = APIRouter()
 
 
 @router.get(
+    '/currents/{survey_id}',
+    response_class=StreamingResponse
+)
+async def download_currents_survey_data(
+        survey_id: str,
+        data_type: str = Query(None, title='Data Type')
+):
+    items = get_currents_items(survey_id)
+
+    return get_zipped_csv_response(items, survey_id, data_type)
+
+
+def get_currents_items(survey_id: str) -> list:
+    stmt = (
+        select(
+            CurMooring
+        ).where(CurMooring.survey_id == survey_id.replace('-', '/')).
+        options(
+            joinedload(CurMooring.cur_depths).
+            joinedload(CurDepth.cur_data_list).
+            joinedload(CurData.cur_watphy)
+        )
+    )
+
+    if not (results := Session.execute(stmt).unique()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return [
+        CurrentsDownloadModel(
+            sampling_depth=cur_depth.spldep if cur_depth.spldep else 0,
+            instrument=cur_depth.edm_instrument2.name if cur_depth.edm_instrument2 and cur_depth.edm_instrument2.name else '',
+            time_interval=cur_depth.time_interval if cur_depth.time_interval else 0,
+            passkey=cur_depth.passkey if cur_depth.passkey else '',
+            parameters=cur_depth.parameters if cur_depth.parameters else '',
+            datetime=cur_data.datetime if cur_data.datetime else '',
+            speed=cur_data.speed if cur_data.speed else 0,
+            direction=cur_data.direction if cur_data.direction else 0,
+            temperature=cur_data.temperature if cur_data.temperature else 0,
+            vert_velocity=cur_data.vert_velocity if cur_data.vert_velocity else 0,
+            f_speed_9=cur_data.f_speed_9 if cur_data.f_speed_9 else 0,
+            f_direction_9=cur_data.f_direction_9 if cur_data.f_direction_9 else 0,
+            f_speed_14=cur_data.f_speed_14 if cur_data.f_speed_14 else 0,
+            f_direction_14=cur_data.f_direction_14 if cur_data.f_direction_14 else 0,
+            pressure=cur_data.pressure if cur_data.pressure else 0,
+            ph=cur_data.cur_watphy.ph if cur_data.cur_watphy and cur_data.cur_watphy.ph else 0,
+            salinity=cur_data.cur_watphy.salinity if cur_data.cur_watphy and cur_data.cur_watphy.salinity else 0,
+            dissolved_oxygen=cur_data.cur_watphy.dis_oxy if cur_data.cur_watphy and cur_data.cur_watphy.dis_oxy else 0,
+        ).dict()
+        for row in results
+        for cur_depth in row.CurMooring.cur_depths
+        for cur_data in cur_depth.cur_data_list
+    ]
+
+
+@router.get(
     '/hydro/{survey_id}',
     response_class=StreamingResponse
 )
-async def download_survey_data(
+async def download_hydro_survey_data(
         survey_id: str,
         data_type: str = Query(None, title='Data Type')
 ):
@@ -58,7 +113,7 @@ def get_data_type_items(data_type: str, survey_id: str) -> list:
         case DataType.WEATHER:
             return get_weather_items(survey_id)
         case DataType.CURRENTS:
-            return get_currents_items(survey_id)
+            return get_hydro_currents_items(survey_id)
 
 
 def get_water_items(survey_id: str) -> list:
@@ -277,7 +332,7 @@ def get_weather_items(survey_id: str) -> list:
     ]
 
 
-def get_currents_items(survey_id: str) -> list:
+def get_hydro_currents_items(survey_id: str) -> list:
     stmt = (
         select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
         options(
@@ -518,12 +573,12 @@ def get_table_data(api_model, db_model, fetched_model, fields_to_ignore: list = 
     }
 
 
-def get_zipped_csv_response(items, survey_id, data_type) -> StreamingResponse:
+def get_zipped_csv_response(items, survey_id, data_variant) -> StreamingResponse:
     """
     Converts a list of dictionary items to a streaming response of a zipped folder containing a csv file
     :param items: A list of dictionaries that contain the information for each row of the csv
     :param survey_id: The id of the applicable survey for file naming purposes
-    :param data_type: The data type requested for file naming purposes
+    :param data_variant: The variant of the data for file naming purposes
     """
     data_frame = pd.DataFrame(items)
 
@@ -538,6 +593,6 @@ def get_zipped_csv_response(items, survey_id, data_type) -> StreamingResponse:
         zip_archive.writestr(f"survey_{survey_id}.csv", stream.read())
 
     response = StreamingResponse(iter([zip_buffer.getvalue()]), media_type="application/zip")
-    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}_{data_type}.zip"
+    response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}_{data_variant}.zip"
 
     return response

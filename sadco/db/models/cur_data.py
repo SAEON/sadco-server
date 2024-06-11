@@ -21,3 +21,4 @@ class CurData(Base):
     pressure = Column(Numeric(8, 4))
 
     cur_depth = relationship('CurDepth', back_populates='cur_data_list')
+    cur_watphy = relationship('CurWatphy', back_populates='cur_data', uselist=False)

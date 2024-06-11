@@ -102,7 +102,7 @@ class CurrentDepthModel(BaseModel):
     date_time_start: date
     date_time_end: date
     interval: int
-    records: int # number of cur_data
+    records: int  # number of cur_data
     quality_control: Optional[str] = 'Yes'
 
 
@@ -301,9 +301,30 @@ class HydroWeatherDownloadModel(HydroDownloadModel):
 
 
 class HydroCurrentsDownloadModel(HydroDownloadModel):
-    subdes = str
-    spldattim = datetime
-    spldep = float
-    current_dir = float
-    current_speed = float
-    perc_good = str
+    subdes: str
+    spldattim: datetime
+    spldep: float
+    current_dir: float
+    current_speed: float
+    perc_good: str
+
+
+class CurrentsDownloadModel(BaseModel):
+    sampling_depth: float
+    instrument: str
+    time_interval: float
+    passkey: str
+    parameters: str
+    datetime: datetime
+    speed: float
+    direction: float
+    temperature: float
+    vert_velocity: float
+    f_speed_9: float
+    f_direction_9: float
+    f_speed_14: float
+    f_direction_14: float
+    pressure: float
+    ph: float
+    salinity: float
+    dissolved_oxygen: float

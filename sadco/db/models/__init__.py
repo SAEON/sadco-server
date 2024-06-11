@@ -22,3 +22,5 @@ from .inv_stats import InvStats
 from .cur_depth import CurDepth
 from .cur_mooring import CurMooring
 from .cur_data import CurData
+from .cur_watphy import CurWatphy
+from .edm_instrument2 import EDMInstrument2
