@@ -2,7 +2,7 @@ import pandas as pd
 import zipfile
 
 from io import StringIO, BytesIO
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -20,13 +20,16 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               HydroCurrentsDownloadModel, CurrentsDownloadModel)
 
 from sadco.db import Session
+from sadco.const import SADCOScope
+from odp.api.lib.auth import Authorize
 
 router = APIRouter()
 
 
 @router.get(
     '/currents/{survey_id}',
-    response_class=StreamingResponse
+    response_class=StreamingResponse,
+    dependencies=[Depends(Authorize(SADCOScope.CURRENTS_DOWNLOAD))]
 )
 async def download_currents_survey_data(
         survey_id: str,
@@ -81,7 +84,8 @@ def get_currents_items(survey_id: str) -> list:
 
 @router.get(
     '/hydro/{survey_id}',
-    response_class=StreamingResponse
+    response_class=StreamingResponse,
+    dependencies=[Depends(Authorize(SADCOScope.HYDRO_DOWNLOAD))]
 )
 async def download_hydro_survey_data(
         survey_id: str,

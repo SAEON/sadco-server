@@ -8,7 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import sadco.db
 from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
     SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
-    Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData
+    Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData, CurWatphy, EDMInstrument2
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -88,11 +88,25 @@ class StatusModeFactory(SADCOModelFactory):
                             elements=('unchecked', 'checked', 'bad', 'unknown', 'good', 'bad', 'unknown', 'good'))
 
 
+class CurrentWatphyFactory(SADCOModelFactory):
+    class Meta:
+        model = CurWatphy
+
+    depth_code = factory.SelfAttribute('cur_data.depth_code')
+    data_code = factory.SelfAttribute('cur_data.code')
+    ph = factory.Faker('random_number', digits=randint(0, 2))
+    salinity = factory.Faker('random_number', digits=randint(0, 2))
+    dis_oxy = factory.Faker('random_number', digits=randint(0, 2))
+
+    cur_data = factory.SubFactory('factories.CurrentDataFactory', cur_watphy=None)
+
+
 class CurrentDataFactory(SADCOModelFactory):
     class Meta:
         model = CurData
 
     code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    depth_code = factory.SelfAttribute('cur_depth.code')
     datetime = factory.Faker('date')
     speed = factory.Faker('random_number', digits=randint(1, 4))
     direction = factory.Faker('random_number', digits=randint(1, 4))
@@ -105,6 +119,17 @@ class CurrentDataFactory(SADCOModelFactory):
     pressure = factory.Faker('random_number', digits=randint(1, 4))
 
     cur_depth = factory.SubFactory('factories.CurrentDepthFactory', cur_data_list=None)
+    cur_watphy = factory.RelatedFactory(CurrentWatphyFactory, factory_related_name='cur_data')
+
+
+class EDMInstrument2Factory(SADCOModelFactory):
+    class Meta:
+        model = EDMInstrument2
+
+    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 7))}{n}')
+    name = factory.LazyFunction(lambda: fake.name()[:30])
+
+    cur_depth = factory.RelatedFactory('factories.CurrentDepthFactory', factory_related_name='edm_instrument2')
 
 
 class CurrentDepthFactory(SADCOModelFactory):
@@ -114,7 +139,7 @@ class CurrentDepthFactory(SADCOModelFactory):
     survey_id = factory.SelfAttribute('cur_mooring.survey_id')
     code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
     spldep = factory.Faker('random_number', digits=randint(1, 4))
-    instrument_number = factory.Faker('random_number', digits=randint(1, 30))
+    instrument_number = factory.SelfAttribute('edm_instrument2.code')
     deployment_number = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
     date_time_start = factory.Faker('date')
     date_time_end = factory.Faker('date')
@@ -124,8 +149,9 @@ class CurrentDepthFactory(SADCOModelFactory):
     date_loaded = factory.Faker('date')
     parameters = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
 
-    cur_mooring = factory.SubFactory('factories.CurrentMooringFactory', cur_depths=[])
+    cur_mooring = factory.SubFactory('factories.CurrentMooringFactory', cur_depths=None)
     cur_data_list = factory.RelatedFactory(CurrentDataFactory, factory_related_name='cur_depth')
+    edm_instrument2 = factory.SubFactory(EDMInstrument2Factory, cur_depth=None)
 
 
 class CurrentMooringFactory(SADCOModelFactory):

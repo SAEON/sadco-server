@@ -16,7 +16,7 @@ from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, Wa
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
                               HydroSurveyModel, CurrentDepthModel, CurrentsSurveyModel)
 
-from sadco.api.lib.auth import Authorize
+from odp.api.lib.auth import Authorize
 from sadco.db import Session
 from sadco.const import SADCOScope
 

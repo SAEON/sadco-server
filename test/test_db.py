@@ -1,5 +1,7 @@
-from sadco.db.models import Survey, Inventory, Watphy, Station, Sedphy, Watnut, Watchem1, Watchem2, Watpol1, Watpol2, \
-    Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2, InvStats, CurMooring, CurDepth, CurData
+from sadco.db.models import (Survey, Inventory, Watphy, Station, Sedphy, Watnut, Watchem1, Watchem2, Watpol1, Watpol2,
+                             Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2, InvStats,
+                             CurMooring, CurDepth, CurData,
+                             CurWatphy, EDMInstrument2)
 from test.factories import InventoryFactory
 from test import TestSession
 
@@ -13,7 +15,8 @@ def test_create_read_all():
 
     created_inventory_stats = created_inventory.inv_stats
 
-    fetched_inventory_stats = TestSession.query(InvStats).filter(InvStats.survey_id == created_inventory.survey_id).first()
+    fetched_inventory_stats = TestSession.query(InvStats).filter(
+        InvStats.survey_id == created_inventory.survey_id).first()
 
     assert_model_equality(created_inventory_stats, fetched_inventory_stats)
 
@@ -132,6 +135,20 @@ def test_create_read_all():
     fetched_cur_data = TestSession.query(CurData).filter(CurData.code == created_cur_data.code).first()
 
     assert_model_equality(created_cur_data, fetched_cur_data)
+
+    created_cur_watphy = created_cur_data.cur_watphy
+
+    fetched_cur_watphy = TestSession.query(CurWatphy).filter(
+        CurWatphy.data_code == created_cur_watphy.data_code).first()
+
+    assert_model_equality(created_cur_watphy, fetched_cur_watphy)
+
+    created_edm_instrument2 = created_cur_depth.edm_instrument2
+
+    fetched_edm_instrument2 = TestSession.query(EDMInstrument2).filter(
+        EDMInstrument2.code == created_cur_depth.instrument_number).first()
+
+    assert_model_equality(created_edm_instrument2, fetched_edm_instrument2)
 
 
 def assert_model_equality(model1, model2):

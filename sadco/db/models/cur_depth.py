@@ -11,7 +11,7 @@ class CurDepth(Base):
     code = Column(Integer, nullable=False, primary_key=True)
     mooring_code = Column(Integer, ForeignKey(column='sadco.cur_mooring.code'), nullable=False)
     spldep = Column(Numeric(6, 2))
-    instrument_number = Column(Numeric(38, 0), ForeignKey(column='sadco.edm_instrument2.code'))
+    instrument_number = Column(Integer, ForeignKey(column='sadco.edm_instrument2.code'))
     deployment_number = Column(String(20))
     date_time_start = Column(DateTime, nullable=False)
     date_time_end = Column(DateTime, nullable=False)
