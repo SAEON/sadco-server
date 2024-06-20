@@ -21,7 +21,7 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
 
 from sadco.db import Session
 from sadco.const import SADCOScope
-from odp.api.lib.auth import Authorize
+from sadco.api.lib.auth import Authorize
 
 router = APIRouter()
 
