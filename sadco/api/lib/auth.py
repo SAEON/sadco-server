@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from fastapi import HTTPException
 from fastapi.openapi.models import OAuth2, OAuthFlowClientCredentials, OAuthFlows

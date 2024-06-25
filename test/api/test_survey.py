@@ -1,13 +1,29 @@
-from datetime import date, timedelta
+from datetime import timedelta
+
+import pytest
+
+from sadco.const import SADCOScope
+from test.api import assert_forbidden
 
 
-def test_fetch_surveys(api, inventories):
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_fetch_surveys(api, inventories, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
+
     route = '/survey/surveys'
 
-    r = api.get(route)
-    json = r.json()
+    r = api(scopes).get(route)
 
-    assert r.status_code == 200
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_surveys_result(r, inventories)
+
+
+def assert_surveys_result(response, inventories):
+    assert response.status_code == 200
+
+    json = response.json()
 
     assert len(inventories) == len(json['items'])
 
@@ -27,34 +43,42 @@ def test_fetch_surveys(api, inventories):
                 assert item['chief_scientist'] == ''
             else:
                 assert item['chief_scientist'] == (
-                        created_inventory.scientist_1.f_name.strip() + ' ' + created_inventory.scientist_1.surname.strip()).strip()
+                        created_inventory.scientist_1.f_name.strip() + ' ' +
+                        created_inventory.scientist_1.surname.strip()).strip()
 
             if check_empty_institute:
                 assert item['institute'] == ''
 
 
-def test_search_bounds(api, inventory):
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_bounds(api, inventory, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
+
     route = '/survey/surveys/search'
 
-    r = api.get(
+    r = api(scopes).get(
         route,
         params={
-            'north_bound': (-inventory.lat_south)+1,
-            'south_bound': (-inventory.lat_north)-1,
-            'west_bound': inventory.long_east-1,
-            'east_bound': inventory.long_west+1,
+            'north_bound': (-inventory.lat_south) + 1,
+            'south_bound': (-inventory.lat_north) - 1,
+            'west_bound': inventory.long_east - 1,
+            'east_bound': inventory.long_west + 1,
         }
     )
 
-    json = r.json()
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_search_bounds_result(r, inventory)
 
-    assert r.status_code == 200
 
-    assert len(json['items']) == 1
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_exclusive_bounds(api, inventory, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
 
-    assert json['items'][0]['id'] == inventory.survey_id
+    route = '/survey/surveys/search'
 
-    r = api.get(
+    r = api(scopes).get(
         route,
         params={
             'north_bound': (-inventory.lat_north) + 1,
@@ -65,22 +89,32 @@ def test_search_bounds(api, inventory):
         }
     )
 
-    json = r.json()
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_search_bounds_result(r, inventory)
 
-    assert r.status_code == 200
+
+def assert_search_bounds_result(response, inventory):
+    json = response.json()
+
+    assert response.status_code == 200
 
     assert len(json['items']) == 1
 
     assert json['items'][0]['id'] == inventory.survey_id
 
 
-def test_search_interval(api, inventory):
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_interval(api, inventory, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
+
     route = '/survey/surveys/search'
 
     start_date = (inventory.date_end - timedelta(days=1)).strftime("%Y-%m-%d")
     end_date = (inventory.date_start + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    r = api.get(
+    r = api(scopes).get(
         route,
         params={
             'start_date': start_date,
@@ -88,18 +122,22 @@ def test_search_interval(api, inventory):
         }
     )
 
-    json = r.json()
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_search_interval_result(r, inventory)
 
-    assert r.status_code == 200
 
-    assert len(json['items']) == 1
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_exclusive_interval(api, inventory, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
 
-    assert json['items'][0]['id'] == inventory.survey_id
+    route = '/survey/surveys/search'
 
     start_date = (inventory.date_start - timedelta(days=1)).strftime("%Y-%m-%d")
     end_date = (inventory.date_end + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    r = api.get(
+    r = api(scopes).get(
         route,
         params={
             'start_date': start_date,
@@ -108,66 +146,94 @@ def test_search_interval(api, inventory):
         }
     )
 
-    json = r.json()
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_search_interval_result(r, inventory)
 
-    assert r.status_code == 200
+
+def assert_search_interval_result(response, inventory):
+    json = response.json()
+
+    assert response.status_code == 200
 
     assert len(json['items']) == 1
 
     assert json['items'][0]['id'] == inventory.survey_id
 
 
-def test_search_sampling_device(api, survey):
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_sampling_device(api, survey, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
+
     sampling_device_code = survey.stations[0].sedphy_list[0].device_code
 
     route = '/survey/surveys/search'
 
-    r = api.get(
+    r = api(scopes).get(
         route,
         params={
             'sampling_device_code': sampling_device_code
         }
     )
 
-    json = r.json()
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert r.status_code == 200
 
-    assert r.status_code == 200
-
-    assert len(json['items']) > 0
+        assert len(r.json()['items']) > 0
 
 
-def test_search_survey_type(api, inventory):
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_survey_type(api, inventory, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
+
     survey_type = inventory.survey_type
 
     route = '/survey/surveys/search'
 
-    r = api.get(
+    r = api(scopes).get(
         route,
         params={
             'survey_type_code': survey_type.code
         }
     )
 
-    json = r.json()
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
 
-    assert r.status_code == 200
+        assert r.status_code == 200
 
-    assert len(json['items']) > 0
+        assert len(json['items']) > 0
 
-    for item in json['items']:
-        assert item['survey_type'] == survey_type.name
+        for item in json['items']:
+            assert item['survey_type'] == survey_type.name
 
-    for fetched_survey_type in json['survey_types']:
-        assert fetched_survey_type['code'] == survey_type.code
+        for fetched_survey_type in json['survey_types']:
+            assert fetched_survey_type['code'] == survey_type.code
 
 
-def test_fetch_hydro_survey(api, survey):
+@pytest.mark.require_scope(SADCOScope.HYDRO_READ)
+def test_fetch_hydro_survey(api, survey, scopes):
+    authorized = SADCOScope.HYDRO_READ in scopes
+
     route = '/survey/hydro/{}'.format(survey.survey_id)
 
-    r = api.get(route)
-    json = r.json()
+    r = api(scopes).get(route)
 
-    assert r.status_code == 200
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_fetch_hydro_survey_result(r, survey)
+
+
+def assert_fetch_hydro_survey_result(response, survey):
+    json = response.json()
+
+    assert response.status_code == 200
 
     water_data_type = json['data_types']['water']
     sediment_data_type = json['data_types']['sediment']
@@ -192,17 +258,21 @@ def test_fetch_hydro_survey(api, survey):
             sediment_data_type['sediment_pollution']['record_count'])
 
 
-def test_fetch_currents_survey(api, current_mooring):
+@pytest.mark.require_scope(SADCOScope.CURRENTS_READ)
+def test_fetch_currents_survey(api, current_mooring, scopes):
+    authorized = SADCOScope.CURRENTS_READ in scopes
+
     route = '/survey/currents/{}'.format(current_mooring.survey_id)
 
-    r = api.get(route)
-    json = r.json()
+    r = api(scopes).get(route)
 
-    assert r.status_code == 200
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
 
-    current_depths = json['mooring_details']
+        assert r.status_code == 200
 
-    assert len(current_depths) == len(current_mooring.cur_depths)
+        current_depths = json['mooring_details']
 
-
-
+        assert len(current_depths) == len(current_mooring.cur_depths)

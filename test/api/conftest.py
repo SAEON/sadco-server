@@ -1,22 +1,66 @@
 import sadco.api
 from random import randint, choice
+from collections import namedtuple
 
-from test.factories import Watchem1Factory, Watchem2Factory, Watpol1Factory, Watpol2Factory, WatcurrentsFactory, \
-    WatnutFactory, WatphyFactory, StationFactory, SurveyFactory, InventoryFactory, SedphyFactory, Sedchem2Factory, \
-    Sedchem1Factory, Sedpol2Factory, Sedpol1Factory, PlanamFactory, InstitutesFactory, ScientistsFactory, \
-    WeatherFactory, CurrentsFactory, CurrentMooringFactory, CurrentDepthFactory, CurrentDataFactory
+from odp.lib.hydra import HydraAdminAPI
+from test.factories import (Watchem1Factory, Watchem2Factory, Watpol1Factory, Watpol2Factory, WatcurrentsFactory,
+                            WatnutFactory, WatphyFactory, StationFactory, SurveyFactory, InventoryFactory,
+                            SedphyFactory, Sedchem2Factory,
+                            Sedchem1Factory, Sedpol2Factory, Sedpol1Factory, PlanamFactory, InstitutesFactory,
+                            WeatherFactory, CurrentsFactory, CurrentMooringFactory, CurrentDepthFactory,
+                            CurrentDataFactory)
+from test.api import all_scopes, all_scopes_excluding
+
+from sadco.const import SADCOScope, DataType
 
 from starlette.testclient import TestClient
 import pytest
 
+MockToken = namedtuple('MockToken', ('active', 'client_id', 'sub'))
 
-@pytest.fixture
-def api():
-    api_client = TestClient(app=sadco.api.app)
-    api_client.headers = {
-        'Accept': 'application/json'
-    }
-    return api_client
+
+@pytest.fixture(params=['client_credentials', 'authorization_code'])
+def api(request, monkeypatch):
+    """Fixture returning an API test client constructor. Example usages::
+
+        r = api(scopes).get('/catalog/')
+
+        r = api(scopes, user_collections=authorized_collections).post('/record/', json=dict(
+            doi=record.doi,
+            metadata=record.metadata_,
+            ...,
+        ))
+
+    Each parameterization of the calling test is invoked twice: first
+    to simulate a machine client with a client_credentials grant; second
+    to simulate a UI client with an authorization_code grant.
+
+    :param scopes: iterable of ODPScope granted to the test client/user
+    """
+
+    def api_test_client(
+            scopes: list[SADCOScope],
+            *,
+            client_id: str = 'sadco.test.client',
+            role_id: str = 'sadco.test.role',
+            user_id: str = 'sadco.test.user'
+    ):
+        monkeypatch.setattr(HydraAdminAPI, 'introspect_token', lambda _, access_token, required_scopes: MockToken(
+            active=required_scopes[0] in scopes,
+            client_id=client_id,
+            sub=user_id if request.param == 'authorization_code' else client_id,
+        ))
+
+        return TestClient(
+            app=sadco.api.app,
+            headers={
+                'Accept': 'application/json',
+                'Authorization': 'Bearer t0k3n',
+            }
+        )
+
+    api_test_client.grant_type = request.param
+    return api_test_client
 
 
 @pytest.fixture(params=[True, False])
@@ -37,7 +81,8 @@ def institute(request):
 
 @pytest.fixture
 def inventories(planam, institute):
-    return InventoryFactory.create_batch(randint(2, 5), survey=None, planam=planam, institute=institute)
+    return InventoryFactory.create_batch(randint(1, 5), survey=None, planam=planam, institute=institute,
+                                         cur_moorings=None)
 
 
 @pytest.fixture
@@ -102,3 +147,49 @@ def set_current_data_batch(current_depth):
         CurrentDataFactory.create(cur_depth=current_depth)
 
 
+@pytest.fixture(params=[
+        DataType.WATER.value,
+        DataType.WATERNUTRIENTS.value,
+        DataType.WATERCHEMISTRY.value,
+        DataType.WATERPOLLUTION.value,
+        DataType.WATERNUTRIENTSANDCHEMISTRY.value,
+        DataType.CURRENTS.value,
+        DataType.WEATHER.value,
+        DataType.SEDIMENT.value,
+        DataType.SEDIMENTCHEMISTRY.value,
+        DataType.SEDIMENTPOLLUTION.value
+    ])
+def hydro_data_type(request):
+    return request.param
+
+@pytest.fixture(params=['scope_match', 'scope_none', 'scope_all', 'scope_excl'])
+def scopes(request):
+    """Fixture for parameterizing the set of auth scopes
+    to be associated with the API test client.
+
+    The test function must be decorated to indicate the scope
+    required by the API route::
+
+        @pytest.mark.require_scope(ODPScope.CATALOG_READ)
+
+    This has the same effect as parameterizing the test function
+    as follows::
+
+        @pytest.mark.parametrize('scopes', [
+            [ODPScope.CATALOG_READ],
+            [],
+            all_scopes,
+            all_scopes_excluding(ODPScope.CATALOG_READ),
+        ])
+
+    """
+    scope = request.node.get_closest_marker('require_scope').args[0]
+
+    if request.param == 'scope_match':
+        return [scope]
+    elif request.param == 'scope_none':
+        return []
+    elif request.param == 'scope_all':
+        return all_scopes
+    elif request.param == 'scope_excl':
+        return all_scopes_excluding(scope)

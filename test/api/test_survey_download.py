@@ -1,22 +1,25 @@
 import os
 import zipfile
-
 import pytest
-
-from sadco.const import DataType
 import pandas as pd
 import io
 
-from test.factories import SurveyFactory, StationFactory, WatphyFactory, Watchem1Factory, Watchem2Factory, \
-    Watpol1Factory, Watpol2Factory, WatnutFactory, InventoryFactory, WatchlFactory, CurrentsFactory, WeatherFactory, \
-    SedphyFactory, Sedpol1Factory, Sedpol2Factory, Sedchem1Factory, Sedchem2Factory
+from test.factories import (SurveyFactory, StationFactory, WatphyFactory, Watchem1Factory, Watchem2Factory,
+                            Watpol1Factory, Watpol2Factory, WatnutFactory, InventoryFactory, WatchlFactory,
+                            CurrentsFactory, WeatherFactory,
+                            SedphyFactory, Sedpol1Factory, Sedpol2Factory, Sedchem1Factory, Sedchem2Factory,
+                            CurrentMooringFactory,
+                            CurrentDepthFactory, EDMInstrument2Factory, CurrentDataFactory, CurrentWatphyFactory)
+
+from sadco.const import SADCOScope
+from test.api import assert_forbidden
 
 TEST_SURVEY_ID: str = '1999/0001'
 
 
 @pytest.fixture
-def survey_download():
-    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None)
+def hydro_survey_download():
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None)
     survey = SurveyFactory.create(
         survey_id=inventory.survey_id,
         stations=None,
@@ -424,51 +427,148 @@ def set_sedphy_record(station):
     )
 
 
-def test_download_all_data_types(api, survey_download):
-    route = '/survey/download/hydro/{}'.format(survey_download.survey_id.replace('/', '-'))
+@pytest.fixture
+def currents_survey_download():
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None)
+    cur_mooring = CurrentMooringFactory.create(
+        inventory=inventory,
+        survey_id=inventory.survey_id,
+        cur_depths=None
+    )
 
-    data_types = [
-        DataType.WATER.value,
-        DataType.WATERNUTRIENTS.value,
-        DataType.WATERCHEMISTRY.value,
-        DataType.WATERPOLLUTION.value,
-        DataType.WATERNUTRIENTSANDCHEMISTRY.value,
-        DataType.CURRENTS.value,
-        DataType.WEATHER.value,
-        DataType.SEDIMENT.value,
-        DataType.SEDIMENTCHEMISTRY.value,
-        DataType.SEDIMENTPOLLUTION.value
-    ]
+    set_current_depth(cur_mooring)
+    return cur_mooring
 
-    for data_type in data_types:
-        r = api.get(
-            route,
-            params={
-                'data_type': data_type
-            }
-        )
 
-        assert r.status_code == 200
+def set_current_depth(cur_mooring):
+    ed_instrument2 = EDMInstrument2Factory.create(
+        code=1,
+        name='Waverider',
+        cur_depth=None
+    )
 
-        current_dir = os.getcwd()
+    current_depth = CurrentDepthFactory.create(
+        cur_mooring=cur_mooring,
+        survey_id=cur_mooring.survey_id,
+        cur_data_list=None,
+        edm_instrument2=ed_instrument2,
+        spldep=250,
+        time_interval=30,
+        passkey='123ABC',
+        parameters='Y',
+    )
 
-        zipped_data = r.content
+    set_current_data_and_watphy_records(current_depth)
 
-        downloaded_csv_file_name = 'survey_{}.csv'.format(TEST_SURVEY_ID.replace('/', '-'))
 
-        downloaded_csv_data_frame = get_csv_from_zipped_file(zipped_data, downloaded_csv_file_name)
+def set_current_data_and_watphy_records(current_depth):
+    current_data_record_1 = CurrentDataFactory.create(
+        cur_depth=current_depth,
+        cur_watphy=None,
+        depth_code=current_depth.code,
+        datetime='1999/01/01',
+        speed=45,
+        direction=None,
+        temperature=17,
+        vert_velocity=None,
+        f_speed_9=12,
+        f_direction_9=None,
+        f_speed_14=55,
+        f_direction_14=None,
+        pressure=11.6,
+    )
 
-        compare_csv_file_path = '{}/api/data-extractions/hydro_{}_{}.csv'.format(
-            current_dir,
-            data_type,
-            TEST_SURVEY_ID.replace('/', '-')
-        )
+    CurrentWatphyFactory(
+        cur_data=current_data_record_1,
+        ph=None,
+        salinity=2.4,
+        dis_oxy=None
+    )
 
-        compare_csv_data_frame = pd.read_csv(compare_csv_file_path)
+    current_data_record_2 = CurrentDataFactory.create(
+        cur_depth=current_depth,
+        cur_watphy=None,
+        depth_code=current_depth.code,
+        datetime='1999/01/02',
+        speed=None,
+        direction=12,
+        temperature=None,
+        vert_velocity=23,
+        f_speed_9=None,
+        f_direction_9=68,
+        f_speed_14=None,
+        f_direction_14=14,
+        pressure=None,
+    )
 
-        differences = compare_csv_data_frame.compare(downloaded_csv_data_frame)
+    CurrentWatphyFactory(
+        cur_data=current_data_record_2,
+        ph=7.8,
+        salinity=None,
+        dis_oxy=17.2
+    )
 
-        assert differences.empty
+
+@pytest.mark.require_scope(SADCOScope.HYDRO_DOWNLOAD)
+def test_download_all_hydro_data_types(api, hydro_survey_download, scopes, hydro_data_type):
+    authorized = SADCOScope.HYDRO_DOWNLOAD in scopes
+
+    route = '/survey/download/hydro/{}'.format(hydro_survey_download.survey_id.replace('/', '-'))
+
+    r = api(scopes).get(
+        route,
+        params={
+            'data_type': hydro_data_type
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_download_result(r, f'hydro_{hydro_data_type}')
+
+
+@pytest.mark.require_scope(SADCOScope.CURRENTS_DOWNLOAD)
+def test_download_currents_data(api, currents_survey_download, scopes):
+    authorized = SADCOScope.CURRENTS_DOWNLOAD in scopes
+
+    route = '/survey/download/currents/{}'.format(currents_survey_download.survey_id.replace('/', '-'))
+
+    r = api(scopes).get(
+        route,
+        params={
+            'data_type': None
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_download_result(r, 'currents')
+
+
+def assert_download_result(response, compare_file_name):
+    assert response.status_code == 200
+
+    current_dir = os.getcwd()
+
+    zipped_data = response.content
+
+    downloaded_csv_file_name = 'survey_{}.csv'.format(TEST_SURVEY_ID.replace('/', '-'))
+
+    downloaded_csv_data_frame = get_csv_from_zipped_file(zipped_data, downloaded_csv_file_name)
+
+    compare_csv_file_path = '{}/api/data-extractions/{}_{}.csv'.format(
+        current_dir,
+        compare_file_name,
+        TEST_SURVEY_ID.replace('/', '-')
+    )
+
+    compare_csv_data_frame = pd.read_csv(compare_csv_file_path)
+
+    differences = compare_csv_data_frame.compare(downloaded_csv_data_frame)
+
+    assert differences.empty
 
 
 def get_csv_from_zipped_file(zipped_data, csv_file_name):

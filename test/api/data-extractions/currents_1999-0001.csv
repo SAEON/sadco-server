@@ -1,0 +1,3 @@
+sampling_depth,instrument,time_interval,passkey,parameters,datetime,speed,direction,temperature,vert_velocity,f_speed_9,f_direction_9,f_speed_14,f_direction_14,pressure,ph,salinity,dissolved_oxygen
+250.0,Waverider,30.0,123ABC,Y,1999-01-01,45.0,0.0,17.0,0.0,12.0,0.0,55.0,0.0,11.6,0.0,2.4,0.0
+250.0,Waverider,30.0,123ABC,Y,1999-01-02,0.0,12.0,0.0,23.0,0.0,68.0,0.0,14.0,0.0,7.8,0.0,17.2

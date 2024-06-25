@@ -30,7 +30,7 @@ class ScientistsFactory(SADCOModelFactory):
     class Meta:
         model = Scientists
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     surname = factory.LazyFunction(lambda: fake.name()[:20])
     f_name = factory.LazyFunction(lambda: fake.name()[:20])
     title = fake.random_element(elements=('Mrs', 'Ms', 'Dr', 'Mr'))
@@ -63,7 +63,7 @@ class SurveyTypeFactory(SADCOModelFactory):
     class Meta:
         model = SurveyType
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     name = factory.LazyFunction(
         lambda: choice(('Unknown', 'Hydro', 'Weather', 'UTR', 'VOS', 'Waves', 'Currents', 'Echo-Sounding'))
     )
@@ -74,7 +74,7 @@ class SamplingDeviceFactory(SADCOModelFactory):
     class Meta:
         model = SamplingDevice
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=7) + n)
     name = factory.LazyFunction(lambda: fake.name()[:25])
 
 
@@ -105,7 +105,7 @@ class CurrentDataFactory(SADCOModelFactory):
     class Meta:
         model = CurData
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     depth_code = factory.SelfAttribute('cur_depth.code')
     datetime = factory.Faker('date')
     speed = factory.Faker('random_number', digits=randint(1, 4))
@@ -126,7 +126,7 @@ class EDMInstrument2Factory(SADCOModelFactory):
     class Meta:
         model = EDMInstrument2
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     name = factory.LazyFunction(lambda: fake.name()[:30])
 
     cur_depth = factory.RelatedFactory('factories.CurrentDepthFactory', factory_related_name='edm_instrument2')
@@ -137,7 +137,7 @@ class CurrentDepthFactory(SADCOModelFactory):
         model = CurDepth
 
     survey_id = factory.SelfAttribute('cur_mooring.survey_id')
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     spldep = factory.Faker('random_number', digits=randint(1, 4))
     instrument_number = factory.SelfAttribute('edm_instrument2.code')
     deployment_number = factory.Faker('lexify', text='?????', letters='ABCDE-12345')
@@ -158,7 +158,7 @@ class CurrentMooringFactory(SADCOModelFactory):
     class Meta:
         model = CurMooring
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     client_code = factory.Faker('random_number', digits=randint(1, 30))
     planam_code = factory.Faker('random_number', digits=randint(1, 30))
     stnnam = factory.Faker('random_number', digits=randint(1, 30))
@@ -282,7 +282,7 @@ class SedphyFactory(SADCOModelFactory):
     class Meta:
         model = Sedphy
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=7) + n)
     device_code = factory.Faker('random_number', digits=randint(1, 8))
     method_code = factory.Faker('random_number', digits=randint(1, 8))
     standard_code = factory.Faker('random_number', digits=randint(1, 8))
@@ -422,7 +422,7 @@ class WatphyFactory(SADCOModelFactory):
     class Meta:
         model = Watphy
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=7) + n)
     method_code = factory.Faker('random_number', digits=randint(1, 38))
     standard_code = factory.Faker('random_number', digits=randint(1, 38))
     subdes = factory.Faker('lexify', text='?????')
