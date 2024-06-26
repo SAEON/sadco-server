@@ -6,4 +6,5 @@ from .survey import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                      HydroWaterPollutionDownloadModel, HydroWaterChemistryDownloadModel,
                      HydroSedimentPhysicalDownloadModel, HydroSedimentChemistryDownloadModel,
                      HydroSedimentPollutionDownloadModel, HydroWaterNutrientsDownloadModel, HydroWeatherDownloadModel,
-                     CurrentDepthModel, CurrentsSurveyModel, CurrentsDownloadModel, HydroCurrentsDownloadModel)
+                     CurrentDepthModel, CurrentsSurveyModel, CurrentsDownloadModel, HydroCurrentsDownloadModel,
+                     WeatherPeriodCountsModel, WeatherSurveyModel)

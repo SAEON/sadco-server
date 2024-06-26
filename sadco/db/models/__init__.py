@@ -24,3 +24,5 @@ from .cur_mooring import CurMooring
 from .cur_data import CurData
 from .cur_watphy import CurWatphy
 from .edm_instrument2 import EDMInstrument2
+from .wet_station import WetStation
+from .wet_period_counts import WetPeriodCounts

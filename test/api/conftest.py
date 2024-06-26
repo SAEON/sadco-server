@@ -37,7 +37,6 @@ def api(request, monkeypatch):
 
     :param scopes: iterable of ODPScope granted to the test client/user
     """
-
     def api_test_client(
             scopes: list[SADCOScope],
             *,
@@ -161,6 +160,7 @@ def set_current_data_batch(current_depth):
     ])
 def hydro_data_type(request):
     return request.param
+
 
 @pytest.fixture(params=['scope_match', 'scope_none', 'scope_all', 'scope_excl'])
 def scopes(request):

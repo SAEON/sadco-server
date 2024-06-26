@@ -8,7 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.const import DataType
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Watchem1, Watchem2, Watnut, Watpol1, Watpol2,
                              Sedpol1, Sedpol2, Sedchem1, Sedchem2, Currents, CurMooring, CurDepth, CurData)
 
@@ -20,7 +19,7 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               HydroCurrentsDownloadModel, CurrentsDownloadModel)
 
 from sadco.db import Session
-from sadco.const import SADCOScope
+from sadco.const import SADCOScope, DataType
 from sadco.api.lib.auth import Authorize
 
 router = APIRouter()
@@ -91,12 +90,12 @@ async def download_hydro_survey_data(
         survey_id: str,
         data_type: str = Query(None, title='Data Type')
 ):
-    items = get_data_type_items(data_type, survey_id)
+    items = get_hydro_data_type_items(data_type, survey_id)
 
     return get_zipped_csv_response(items, survey_id, data_type)
 
 
-def get_data_type_items(data_type: str, survey_id: str) -> list:
+def get_hydro_data_type_items(data_type: str, survey_id: str) -> list:
     match data_type:
         case DataType.WATER:
             return get_water_items(survey_id)

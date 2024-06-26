@@ -9,12 +9,14 @@ from starlette.status import HTTP_404_NOT_FOUND
 from sadco.api.lib.paging import Page, Paginator
 from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData,
                              Sedphy, Sedpol1, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, CurDepth, CurMooring)
+                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, CurDepth, CurMooring,
+                             WetStation)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
                               SurveyTypeModel, CurrentsModel, WeatherModel, SearchResult, SamplingDeviceModel,
-                              HydroSurveyModel, CurrentDepthModel, CurrentsSurveyModel)
+                              HydroSurveyModel, CurrentDepthModel, CurrentsSurveyModel, WeatherPeriodCountsModel,
+                              WeatherSurveyModel)
 
 from sadco.api.lib.auth import Authorize
 from sadco.db import Session
@@ -430,6 +432,65 @@ def get_current_depths(cur_mooring_id: int) -> any:
     )
 
     return query.all()
+
+
+@router.get(
+    '/weather/{survey_id}',
+    response_model=WeatherSurveyModel,
+    dependencies=[Depends(Authorize(SADCOScope.CURRENTS_READ))],
+)
+async def get_currents_survey(
+        survey_id: str
+):
+    stmt = (
+        select(
+            Inventory
+        ).
+        filter(
+            Inventory.survey_id == survey_id.replace('-', '/')
+        )
+    )
+
+    if not (result := Session.execute(stmt).one_or_none()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return WeatherSurveyModel(
+        **get_survey_model(result.Inventory).dict(),
+        weather_period_counts=get_weather_period_counts(result.Inventory.wet_stations)
+    )
+
+
+def get_weather_period_counts(weather_stations: list[WetStation]) -> list[WeatherPeriodCountsModel]:
+    return [
+        WeatherPeriodCountsModel(
+            year=weather_period_counts.yearp,
+            jan=weather_period_counts.m01,
+            feb=weather_period_counts.m02,
+            mar=weather_period_counts.m03,
+            apr=weather_period_counts.m04,
+            may=weather_period_counts.m05,
+            jun=weather_period_counts.m06,
+            jul=weather_period_counts.m07,
+            aug=weather_period_counts.m08,
+            sep=weather_period_counts.m09,
+            oct=weather_period_counts.m10,
+            nov=weather_period_counts.m11,
+            dec=weather_period_counts.m12,
+            total=get_weather_period_counts_total(weather_period_counts)
+        )
+        for weather_station in weather_stations
+        for weather_period_counts in weather_station.wet_period_counts
+    ]
+
+
+def get_weather_period_counts_total(weather_period_counts) -> int:
+    total = 0
+
+    for key, value in weather_period_counts.__dict__.items():
+        if 'm' in key:
+            total += value
+
+    return total
 
 
 def get_data_types_manually(survey_id: str) -> DataTypesModel:  # pragma: no cover

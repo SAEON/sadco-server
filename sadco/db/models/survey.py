@@ -22,9 +22,9 @@ class Survey(Base):
     notes_3 = Column(String(40))
     notes_4 = Column(String(40))
 
-    # view of associated stations (one-to-many)
     stations = relationship('Station', back_populates='survey')
     inventory = relationship('Inventory', uselist=False, back_populates='survey')
     institute_relation = relationship('Institutes')
     planam_relation = relationship('Planam')
+
 

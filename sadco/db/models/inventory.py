@@ -45,6 +45,7 @@ class Inventory(Base):
 
     survey = relationship('Survey', uselist=False, back_populates='inventory')
     cur_moorings = relationship('CurMooring', back_populates='inventory')
+    wet_stations = relationship('WetStation', back_populates='inventory')
     planam = relationship('Planam', uselist=False)
     institute = relationship('Institutes', uselist=False)
     survey_type = relationship('SurveyType', uselist=False)

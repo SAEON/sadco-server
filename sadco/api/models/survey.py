@@ -110,6 +110,27 @@ class CurrentsSurveyModel(SurveyModel):
     mooring_details: list[CurrentDepthModel]
 
 
+class WeatherPeriodCountsModel(BaseModel):
+    year: int
+    jan: Optional[int]
+    feb: Optional[int]
+    mar: Optional[int]
+    apr: Optional[int]
+    may: Optional[int]
+    jun: Optional[int]
+    jul: Optional[int]
+    aug: Optional[int]
+    sep: Optional[int]
+    oct: Optional[int]
+    nov: Optional[int]
+    dec: Optional[int]
+    total: int
+
+
+class WeatherSurveyModel(SurveyModel):
+    weather_period_counts: list[WeatherPeriodCountsModel]
+
+
 class SamplingDeviceModel(BaseModel):
     code: int
     name: str
