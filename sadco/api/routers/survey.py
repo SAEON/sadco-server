@@ -437,7 +437,7 @@ def get_current_depths(cur_mooring_id: int) -> any:
 @router.get(
     '/weather/{survey_id}',
     response_model=WeatherSurveyModel,
-    dependencies=[Depends(Authorize(SADCOScope.CURRENTS_READ))],
+    dependencies=[Depends(Authorize(SADCOScope.WEATHER_READ))],
 )
 async def get_currents_survey(
         survey_id: str
