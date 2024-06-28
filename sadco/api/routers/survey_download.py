@@ -86,7 +86,7 @@ def get_currents_items(survey_id: str) -> list:
 @router.get(
     '/weather/{survey_id}',
     response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.CURRENTS_DOWNLOAD))]
+    dependencies=[Depends(Authorize(SADCOScope.WEATHER_DOWNLOAD))]
 )
 async def download_currents_survey_data(
         survey_id: str,
