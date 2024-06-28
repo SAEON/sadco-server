@@ -8,7 +8,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import sadco.db
 from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
     SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
-    Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData, CurWatphy, EDMInstrument2
+    Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData, CurWatphy, EDMInstrument2, WetStation, \
+    WetPeriod, WetPeriodCounts, WetData
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -50,7 +51,7 @@ class PlanamFactory(SADCOModelFactory):
     class Meta:
         model = Planam
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=7) + n)
     name = factory.LazyFunction(lambda: fake.name())
     platform_code = factory.LazyFunction(lambda: fake.random_number(digits=randint(0, 38)))
     callsign = ''.join(fake.random_uppercase_letter() for _ in range(0, randint(0, 7)))
@@ -82,10 +83,116 @@ class StatusModeFactory(SADCOModelFactory):
     class Meta:
         model = StatusMode
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(0, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=7) + n)
     flagging = factory.Faker('random_element', elements=('closed', 'open'))
     quality = factory.Faker('random_element',
                             elements=('unchecked', 'checked', 'bad', 'unknown', 'good', 'bad', 'unknown', 'good'))
+
+
+class EDMInstrument2Factory(SADCOModelFactory):
+    class Meta:
+        model = EDMInstrument2
+
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
+    name = factory.LazyFunction(lambda: fake.name()[:30])
+
+    # cur_depth = factory.RelatedFactory('factories.CurrentDepthFactory', factory_related_name='edm_instrument2')
+    # wet_period = factory.RelatedFactory('factories.WetPeriodFactory', factory_related_name='edm_instrument2')
+
+
+class WetDataFactory(SADCOModelFactory):
+    class Meta:
+        model = WetData
+
+    station_id = factory.Faker('lexify', text='????', letters='ABCDE-12345')
+    period_code = factory.SelfAttribute('wet_period.code')
+    date_time = factory.Faker("date_time")
+    air_temp_ave = fake.pydecimal(left_digits=3, right_digits=4)
+    air_temp_min = fake.pydecimal(left_digits=3, right_digits=4)
+    air_temp_min_time = factory.Faker("date_time")
+    air_temp_max = fake.pydecimal(left_digits=3, right_digits=4)
+    air_temp_max_time = factory.Faker("date_time")
+    barometric_pressure = fake.pydecimal(left_digits=5, right_digits=2)
+    fog = fake.pydecimal(left_digits=4, right_digits=1)
+    rainfall = fake.pydecimal(left_digits=4, right_digits=1)
+    relative_humidity = fake.pydecimal(left_digits=3, right_digits=1)
+    solar_radiation = fake.pydecimal(left_digits=5, right_digits=2)
+    solar_radiation_max = fake.pydecimal(left_digits=5, right_digits=2)
+    wind_dir = fake.pydecimal(left_digits=3, right_digits=2)
+    wind_speed_ave = fake.pydecimal(left_digits=3, right_digits=4)
+    wind_speed_min = fake.pydecimal(left_digits=3, right_digits=4)
+    wind_speed_max = fake.pydecimal(left_digits=3, right_digits=4)
+    wind_speed_max_time = factory.Faker("date_time")
+    wind_speed_max_length = factory.Faker("pyint")
+    wind_speed_max_dir = fake.pydecimal(left_digits=3, right_digits=1)
+    wind_speed_std = fake.pydecimal(left_digits=3, right_digits=2)
+
+    # wet_station = factory.SubFactory('factories.WetStationFactory', wet_data_list=None)
+    wet_period = factory.SubFactory('factories.WetPeriodFactory', wet_data_list=None)
+
+
+class WetPeriodFactory(SADCOModelFactory):
+    class Meta:
+        model = WetPeriod
+
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
+    station_id = factory.SelfAttribute('wet_station.station_id')
+    instrument_code = factory.SelfAttribute('edm_instrument2.code')
+    height_surface = factory.Faker('random_number', digits=randint(1, 9))
+    height_msl = factory.Faker('random_number', digits=randint(1, 9))
+    speed_corr_factor = factory.Faker('random_number', digits=randint(1, 3))
+    speed_aver_method = factory.Faker('lexify', text='??????', letters='ABCDE-12345')
+    dir_aver_method = factory.Faker('lexify', text='??????', letters='ABCDE-12345')
+    wind_sampling_interval = factory.Faker('random_number', digits=randint(1, 9))
+    start_date = factory.Faker('date')
+    end_date = factory.Faker('date')
+    sample_interval = factory.Faker('random_number', digits=randint(1, 9))
+    number_records = factory.Faker('random_number', digits=randint(1, 9))
+    number_null_records = factory.Faker('random_number', digits=randint(1, 9))
+    load_date = factory.Faker('date')
+
+    wet_data_list = factory.RelatedFactory(WetDataFactory, factory_related_name='wet_period')
+    wet_station = factory.SubFactory('factories.WetStationFactory', wet_periods=None)
+    edm_instrument2 = factory.SubFactory(EDMInstrument2Factory, wet_period=None)
+
+
+class WetPeriodCountsFactory(SADCOModelFactory):
+    class Meta:
+        model = WetPeriodCounts
+
+    station_id = factory.SelfAttribute('wet_station.station_id')
+    yearp = factory.Faker('random_number', digits=randint(1, 4))
+    m01 = factory.Faker('random_number', digits=randint(1, 30))
+    m02 = factory.Faker('random_number', digits=randint(1, 30))
+    m03 = factory.Faker('random_number', digits=randint(1, 30))
+    m04 = factory.Faker('random_number', digits=randint(1, 30))
+    m05 = factory.Faker('random_number', digits=randint(1, 30))
+    m06 = factory.Faker('random_number', digits=randint(1, 30))
+    m07 = factory.Faker('random_number', digits=randint(1, 30))
+    m08 = factory.Faker('random_number', digits=randint(1, 30))
+    m09 = factory.Faker('random_number', digits=randint(1, 30))
+    m10 = factory.Faker('random_number', digits=randint(1, 30))
+    m11 = factory.Faker('random_number', digits=randint(1, 30))
+    m12 = factory.Faker('random_number', digits=randint(1, 30))
+
+    wet_station = factory.SubFactory('factories.WetStationFactory', wet_period_counts=None)
+
+
+class WetStationFactory(SADCOModelFactory):
+    class Meta:
+        model = WetStation
+
+    station_id = factory.Faker('lexify', text='????', letters='ABCDE-12345')
+    survey_id = factory.SelfAttribute('inventory.survey_id')
+    latitude = factory.Faker('random_number', digits=randint(1, 2))
+    longitude = factory.Faker('random_number', digits=randint(1, 3))
+    name = factory.LazyFunction(lambda: fake.name()[:30])
+    client_code = factory.Faker('random_number', digits=randint(1, 30))
+
+    inventory = factory.SubFactory('factories.InventoryFactory', wet_stations=None)
+    wet_periods = factory.RelatedFactory(WetPeriodFactory, factory_related_name='wet_station')
+    # wet_data_list = factory.RelatedFactory(WetDataFactory, factory_related_name='wet_station')
+    wet_period_counts = factory.RelatedFactory(WetPeriodCountsFactory, factory_related_name='wet_station')
 
 
 class CurrentWatphyFactory(SADCOModelFactory):
@@ -120,16 +227,6 @@ class CurrentDataFactory(SADCOModelFactory):
 
     cur_depth = factory.SubFactory('factories.CurrentDepthFactory', cur_data_list=None)
     cur_watphy = factory.RelatedFactory(CurrentWatphyFactory, factory_related_name='cur_data')
-
-
-class EDMInstrument2Factory(SADCOModelFactory):
-    class Meta:
-        model = EDMInstrument2
-
-    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
-    name = factory.LazyFunction(lambda: fake.name()[:30])
-
-    cur_depth = factory.RelatedFactory('factories.CurrentDepthFactory', factory_related_name='edm_instrument2')
 
 
 class CurrentDepthFactory(SADCOModelFactory):
@@ -603,6 +700,7 @@ class InventoryFactory(SADCOModelFactory):
     survey = factory.RelatedFactory(SurveyFactory, factory_related_name='inventory')
     planam = factory.SubFactory(PlanamFactory)
     cur_moorings = factory.RelatedFactory(CurrentMooringFactory, factory_related_name='inventory')
+    wet_stations = factory.RelatedFactory(WetStationFactory, factory_related_name='inventory')
     institute = factory.SubFactory(InstitutesFactory)
     survey_type = factory.SubFactory(SurveyTypeFactory)
     scientist_1 = factory.SubFactory(ScientistsFactory)

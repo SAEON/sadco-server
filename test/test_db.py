@@ -1,7 +1,7 @@
 from sadco.db.models import (Survey, Inventory, Watphy, Station, Sedphy, Watnut, Watchem1, Watchem2, Watpol1, Watpol2,
                              Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2, InvStats,
                              CurMooring, CurDepth, CurData,
-                             CurWatphy, EDMInstrument2)
+                             CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData)
 from test.factories import InventoryFactory
 from test import TestSession
 
@@ -9,6 +9,16 @@ from test import TestSession
 def test_create_read_all():
     created_inventory = InventoryFactory()
 
+    assert_inventory_data(created_inventory)
+
+    assert_hydro_data(created_inventory)
+
+    assert_current_data(created_inventory)
+
+    assert_weather_data(created_inventory)
+
+
+def assert_inventory_data(created_inventory):
     fetched_inventory = TestSession.query(Inventory).filter(Inventory.survey_id == created_inventory.survey_id).first()
 
     assert_model_equality(created_inventory, fetched_inventory)
@@ -20,6 +30,8 @@ def test_create_read_all():
 
     assert_model_equality(created_inventory_stats, fetched_inventory_stats)
 
+
+def assert_hydro_data(created_inventory):
     created_survey = created_inventory.survey
 
     fetched_survey = TestSession.query(Survey).filter(Survey.survey_id == created_survey.survey_id).first()
@@ -118,6 +130,8 @@ def test_create_read_all():
 
     assert_model_equality(created_sedchem2, fetched_sedchem2)
 
+
+def assert_current_data(created_inventory):
     created_cur_mooring = created_inventory.cur_moorings[0]
 
     fetched_cur_mooring = TestSession.query(CurMooring).filter(CurMooring.code == created_cur_mooring.code).first()
@@ -149,6 +163,39 @@ def test_create_read_all():
         EDMInstrument2.code == created_cur_depth.instrument_number).first()
 
     assert_model_equality(created_edm_instrument2, fetched_edm_instrument2)
+
+
+def assert_weather_data(created_inventory):
+    created_wet_station = created_inventory.wet_stations[0]
+
+    fetched_wet_station = TestSession.query(WetStation).filter(
+        WetStation.station_id == created_wet_station.station_id).first()
+
+    assert_model_equality(created_wet_station, fetched_wet_station)
+
+    created_wet_period = created_wet_station.wet_periods[0]
+
+    fetched_wet_period = TestSession.query(WetPeriod).filter(
+        WetPeriod.code == created_wet_period.code
+    ).first()
+
+    assert_model_equality(created_wet_period, fetched_wet_period)
+
+    created_wet_period_counts = created_wet_station.wet_period_counts[0]
+
+    fetched_wet_period_counts = TestSession.query(WetPeriodCounts).filter(
+        WetPeriodCounts.station_id == created_wet_period.station_id
+    ).first()
+
+    assert_model_equality(created_wet_period_counts, fetched_wet_period_counts)
+
+    created_wet_data = created_wet_period.wet_data_list[0]
+
+    fetched_wet_data = TestSession.query(WetData).filter(
+        WetData.period_code == created_wet_data.period_code
+    ).first()
+
+    assert_model_equality(created_wet_data, fetched_wet_data)
 
 
 def assert_model_equality(model1, model2):

@@ -15,4 +15,6 @@ class WetStation(Base):
     client_code = Column(Numeric(38, 0), nullable=False)
 
     wet_period_counts = relationship('WetPeriodCounts', back_populates='wet_station')
+    wet_periods = relationship('WetPeriod', back_populates='wet_station')
     inventory = relationship('Inventory', back_populates='wet_stations', uselist=False)
+    # wet_data_list = relationship('WetData', back_populates='wet_station')

@@ -26,3 +26,5 @@ from .cur_watphy import CurWatphy
 from .edm_instrument2 import EDMInstrument2
 from .wet_station import WetStation
 from .wet_period_counts import WetPeriodCounts
+from .wet_period import WetPeriod
+from .wet_data import WetData

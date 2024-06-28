@@ -11,4 +11,5 @@ class EDMInstrument2(Base):
     name = Column(String(30))
 
     cur_depth = relationship('CurDepth', uselist=False, back_populates='edm_instrument2')
+    wet_period = relationship('WetPeriod', uselist=False, back_populates='edm_instrument2')
 
