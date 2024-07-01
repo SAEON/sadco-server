@@ -9,9 +9,8 @@ from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.api.models.survey_download import WeatherDownloadModel
-from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Watchem1, Watchem2, Watnut, Watpol1, Watpol2,
-                             Sedpol1, Sedpol2, Sedchem1, Sedchem2, Currents, CurMooring, CurDepth, CurData, Inventory,
-                             WetStation, WetPeriod)
+from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
+                             Inventory, WetStation, WetPeriod)
 
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
