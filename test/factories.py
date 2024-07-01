@@ -8,10 +8,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import sadco.db
 from sadco.db.models import (Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy,
                              SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy,
-                             Sedchem1, Sedchem2,
-                             Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData, CurWatphy,
-                             EDMInstrument2, WetStation,
-                             WetPeriod, WetPeriodCounts, WetData)
+                             Sedchem1, Sedchem2, Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring,
+                             CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData)
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,

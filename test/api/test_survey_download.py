@@ -9,7 +9,8 @@ from test.factories import (SurveyFactory, StationFactory, WatphyFactory, Watche
                             CurrentsFactory, WeatherFactory,
                             SedphyFactory, Sedpol1Factory, Sedpol2Factory, Sedchem1Factory, Sedchem2Factory,
                             CurrentMooringFactory,
-                            CurrentDepthFactory, EDMInstrument2Factory, CurrentDataFactory, CurrentWatphyFactory)
+                            CurrentDepthFactory, EDMInstrument2Factory, CurrentDataFactory, CurrentWatphyFactory,
+                            WetStationFactory, WetPeriodFactory, WetDataFactory)
 
 from sadco.const import SADCOScope
 from test.api import assert_forbidden
@@ -19,7 +20,7 @@ TEST_SURVEY_ID: str = '1999/0001'
 
 @pytest.fixture
 def hydro_survey_download():
-    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None)
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None, wet_stations=None)
     survey = SurveyFactory.create(
         survey_id=inventory.survey_id,
         stations=None,
@@ -429,7 +430,7 @@ def set_sedphy_record(station):
 
 @pytest.fixture
 def currents_survey_download():
-    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None)
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None, wet_stations=None)
     cur_mooring = CurrentMooringFactory.create(
         inventory=inventory,
         survey_id=inventory.survey_id,
@@ -509,6 +510,83 @@ def set_current_data_and_watphy_records(current_depth):
     )
 
 
+@pytest.fixture
+def weather_survey_download():
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None, wet_stations=None)
+    wet_station = WetStationFactory.create(
+        survey_id=inventory.survey_id,
+        inventory=inventory,
+        wet_periods=None,
+        latitude=30,
+        longitude=70,
+        name='MarionWeather'
+    )
+
+    set_wet_periods(wet_station)
+    return wet_station
+
+
+def set_wet_periods(wet_station):
+    wet_period = WetPeriodFactory.create(
+        wet_station=wet_station,
+        wet_data_list=None,
+        height_surface=10.5,
+        height_msl=3.2
+    )
+
+    set_wet_data(wet_period)
+
+
+def set_wet_data(wet_period):
+    WetDataFactory(
+        wet_period=wet_period,
+        date_time='1999/01/02',
+        air_temp_ave=12.4,
+        air_temp_min=None,
+        air_temp_min_time='1999/01/02 05:22',
+        air_temp_max=None,
+        air_temp_max_time='1999/01/02 14:07',
+        barometric_pressure=None,
+        fog=60.3,
+        rainfall=None,
+        relative_humidity=70.4,
+        solar_radiation=None,
+        solar_radiation_max=60,
+        wind_dir=None,
+        wind_speed_ave=12,
+        wind_speed_min=None,
+        wind_speed_max=26,
+        wind_speed_max_time=None,
+        wind_speed_max_length=3,
+        wind_speed_max_dir=None,
+        wind_speed_std=76,
+    )
+
+    WetDataFactory(
+        wet_period=wet_period,
+        date_time='1991/01/01',
+        air_temp_ave=None,
+        air_temp_min=6.3,
+        air_temp_min_time=None,
+        air_temp_max=25.2,
+        air_temp_max_time=None,
+        barometric_pressure=102.5,
+        fog=None,
+        rainfall=124,
+        relative_humidity=None,
+        solar_radiation=57,
+        solar_radiation_max=None,
+        wind_dir=32,
+        wind_speed_ave=None,
+        wind_speed_min=3,
+        wind_speed_max=None,
+        wind_speed_max_time='1999/01/02 13:04',
+        wind_speed_max_length=None,
+        wind_speed_max_dir=33.2,
+        wind_speed_std=None,
+    )
+
+
 @pytest.mark.require_scope(SADCOScope.HYDRO_DOWNLOAD)
 def test_download_all_hydro_data_types(api, hydro_survey_download, scopes, hydro_data_type):
     authorized = SADCOScope.HYDRO_DOWNLOAD in scopes
@@ -545,6 +623,25 @@ def test_download_currents_data(api, currents_survey_download, scopes):
         assert_forbidden(r)
     else:
         assert_download_result(r, 'currents')
+
+
+@pytest.mark.require_scope(SADCOScope.WEATHER_DOWNLOAD)
+def test_download_currents_data(api, weather_survey_download, scopes):
+    authorized = SADCOScope.WEATHER_DOWNLOAD in scopes
+
+    route = '/survey/download/weather/{}'.format(weather_survey_download.survey_id.replace('/', '-'))
+
+    r = api(scopes).get(
+        route,
+        params={
+            'data_type': None
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_download_result(r, 'weather')
 
 
 def assert_download_result(response, compare_file_name):
