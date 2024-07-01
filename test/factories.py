@@ -1,4 +1,4 @@
-from random import randint, uniform, choice
+from random import randint, choice
 
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
@@ -6,10 +6,12 @@ from faker import Faker
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import sadco.db
-from sadco.db.models import Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy, \
-    SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy, Sedchem1, Sedchem2, \
-    Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData, CurWatphy, EDMInstrument2, WetStation, \
-    WetPeriod, WetPeriodCounts, WetData
+from sadco.db.models import (Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy,
+                             SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy,
+                             Sedchem1, Sedchem2,
+                             Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring, CurData, CurWatphy,
+                             EDMInstrument2, WetStation,
+                             WetPeriod, WetPeriodCounts, WetData)
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -107,25 +109,25 @@ class WetDataFactory(SADCOModelFactory):
     station_id = factory.Faker('lexify', text='????', letters='ABCDE-12345')
     period_code = factory.SelfAttribute('wet_period.code')
     date_time = factory.Faker("date_time")
-    air_temp_ave = fake.pydecimal(left_digits=3, right_digits=4)
-    air_temp_min = fake.pydecimal(left_digits=3, right_digits=4)
+    air_temp_ave = factory.Faker('pydecimal', left_digits=3, right_digits=4)
+    air_temp_min = factory.Faker('pydecimal', left_digits=3, right_digits=4)
     air_temp_min_time = factory.Faker("date_time")
-    air_temp_max = fake.pydecimal(left_digits=3, right_digits=4)
+    air_temp_max = factory.Faker('pydecimal', left_digits=3, right_digits=4)
     air_temp_max_time = factory.Faker("date_time")
-    barometric_pressure = fake.pydecimal(left_digits=5, right_digits=2)
-    fog = fake.pydecimal(left_digits=4, right_digits=1)
-    rainfall = fake.pydecimal(left_digits=4, right_digits=1)
-    relative_humidity = fake.pydecimal(left_digits=3, right_digits=1)
-    solar_radiation = fake.pydecimal(left_digits=5, right_digits=2)
-    solar_radiation_max = fake.pydecimal(left_digits=5, right_digits=2)
-    wind_dir = fake.pydecimal(left_digits=3, right_digits=2)
-    wind_speed_ave = fake.pydecimal(left_digits=3, right_digits=4)
-    wind_speed_min = fake.pydecimal(left_digits=3, right_digits=4)
-    wind_speed_max = fake.pydecimal(left_digits=3, right_digits=4)
+    barometric_pressure = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    fog = factory.Faker('pydecimal', left_digits=4, right_digits=1)
+    rainfall = factory.Faker('pydecimal', left_digits=4, right_digits=1)
+    relative_humidity = factory.Faker('pydecimal', left_digits=3, right_digits=1)
+    solar_radiation = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    solar_radiation_max = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    wind_dir = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    wind_speed_ave = factory.Faker('pydecimal', left_digits=3, right_digits=4)
+    wind_speed_min = factory.Faker('pydecimal', left_digits=3, right_digits=4)
+    wind_speed_max = factory.Faker('pydecimal', left_digits=3, right_digits=4)
     wind_speed_max_time = factory.Faker("date_time")
     wind_speed_max_length = factory.Faker("pyint")
-    wind_speed_max_dir = fake.pydecimal(left_digits=3, right_digits=1)
-    wind_speed_std = fake.pydecimal(left_digits=3, right_digits=2)
+    wind_speed_max_dir = factory.Faker('pydecimal', left_digits=3, right_digits=1)
+    wind_speed_std = factory.Faker('pydecimal', left_digits=3, right_digits=2)
 
     # wet_station = factory.SubFactory('factories.WetStationFactory', wet_data_list=None)
     wet_period = factory.SubFactory('factories.WetPeriodFactory', wet_data_list=None)
@@ -138,9 +140,9 @@ class WetPeriodFactory(SADCOModelFactory):
     code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     station_id = factory.SelfAttribute('wet_station.station_id')
     instrument_code = factory.SelfAttribute('edm_instrument2.code')
-    height_surface = factory.Faker('random_number', digits=randint(1, 9))
-    height_msl = factory.Faker('random_number', digits=randint(1, 9))
-    speed_corr_factor = factory.Faker('random_number', digits=randint(1, 3))
+    height_surface = factory.Faker('pydecimal', left_digits=9, right_digits=1)
+    height_msl = factory.Faker('pydecimal', left_digits=9, right_digits=1)
+    speed_corr_factor = factory.Faker('pydecimal', left_digits=3, right_digits=2)
     speed_aver_method = factory.Faker('lexify', text='??????', letters='ABCDE-12345')
     dir_aver_method = factory.Faker('lexify', text='??????', letters='ABCDE-12345')
     wind_sampling_interval = factory.Faker('random_number', digits=randint(1, 9))
@@ -184,8 +186,8 @@ class WetStationFactory(SADCOModelFactory):
 
     station_id = factory.Faker('lexify', text='????', letters='ABCDE-12345')
     survey_id = factory.SelfAttribute('inventory.survey_id')
-    latitude = factory.Faker('random_number', digits=randint(1, 2))
-    longitude = factory.Faker('random_number', digits=randint(1, 3))
+    latitude = factory.Faker('latitude')
+    longitude = factory.Faker('longitude')
     name = factory.LazyFunction(lambda: fake.name()[:30])
     client_code = factory.Faker('random_number', digits=randint(1, 30))
 
@@ -201,9 +203,9 @@ class CurrentWatphyFactory(SADCOModelFactory):
 
     depth_code = factory.SelfAttribute('cur_data.depth_code')
     data_code = factory.SelfAttribute('cur_data.code')
-    ph = factory.Faker('random_number', digits=randint(0, 2))
-    salinity = factory.Faker('random_number', digits=randint(0, 2))
-    dis_oxy = factory.Faker('random_number', digits=randint(0, 2))
+    ph = factory.Faker('pydecimal', left_digits=2, right_digits=2)
+    salinity = factory.Faker('pydecimal', left_digits=2, right_digits=4)
+    dis_oxy = factory.Faker('pydecimal', left_digits=2, right_digits=2)
 
     cur_data = factory.SubFactory('factories.CurrentDataFactory', cur_watphy=None)
 
@@ -215,15 +217,15 @@ class CurrentDataFactory(SADCOModelFactory):
     code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
     depth_code = factory.SelfAttribute('cur_depth.code')
     datetime = factory.Faker('date')
-    speed = factory.Faker('random_number', digits=randint(1, 4))
-    direction = factory.Faker('random_number', digits=randint(1, 4))
-    temperature = factory.Faker('random_number', digits=randint(1, 2))
-    vert_velocity = factory.Faker('random_number', digits=randint(1, 2))
-    f_speed_9 = factory.Faker('random_number', digits=randint(1, 2))
-    f_direction_9 = factory.Faker('random_number', digits=randint(1, 4))
-    f_speed_14 = factory.Faker('random_number', digits=randint(1, 2))
-    f_direction_14 = factory.Faker('random_number', digits=randint(1, 4))
-    pressure = factory.Faker('random_number', digits=randint(1, 4))
+    speed = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    direction = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    temperature = factory.Faker('pydecimal', left_digits=2, right_digits=4)
+    vert_velocity = factory.Faker('pydecimal', left_digits=2, right_digits=2)
+    f_speed_9 = factory.Faker('pydecimal', left_digits=2, right_digits=2)
+    f_direction_9 = factory.Faker('pydecimal', left_digits=4, right_digits=1)
+    f_speed_14 = factory.Faker('pydecimal', left_digits=2, right_digits=2)
+    f_direction_14 = factory.Faker('pydecimal', left_digits=4, right_digits=1)
+    pressure = factory.Faker('pydecimal', left_digits=4, right_digits=4)
 
     cur_depth = factory.SubFactory('factories.CurrentDepthFactory', cur_data_list=None)
     cur_watphy = factory.RelatedFactory(CurrentWatphyFactory, factory_related_name='cur_data')
@@ -261,8 +263,8 @@ class CurrentMooringFactory(SADCOModelFactory):
     stnnam = factory.Faker('random_number', digits=randint(1, 30))
     arenam = factory.Faker('random_number', digits=randint(1, 30))
     description = factory.Faker('text', max_nb_chars=70)
-    latitude = factory.Faker('random_number', digits=randint(1, 2))
-    longitude = factory.Faker('random_number', digits=randint(1, 3))
+    latitude = factory.Faker('latitude')
+    longitude = factory.Faker('longitude')
     stndep = factory.Faker('random_number', digits=randint(1, 5))
     date_time_start = factory.Faker('date')
     date_time_end = factory.Faker('date')
@@ -281,9 +283,9 @@ class CurrentsFactory(SADCOModelFactory):
 
     subdes = factory.Faker('text', max_nb_chars=10)
     spldattim = factory.Faker('date')
-    spldep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    spldep = factory.Faker('pydecimal', left_digits=4, right_digits=2)
     current_dir = factory.Faker('random_number', digits=randint(1, 38))
-    current_speed = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    current_speed = factory.Faker('pydecimal', left_digits=4, right_digits=3)
     perc_good = factory.Faker('text', max_nb_chars=20)
 
     station = factory.SubFactory('factories.StationFactory', sedphy_list=None)
@@ -294,19 +296,19 @@ class WeatherFactory(SADCOModelFactory):
         model = Weather
 
     nav_equip_type = factory.Faker('text', max_nb_chars=10)
-    atmosph_pres = factory.LazyFunction(lambda: uniform(0, 9999.9))
-    surface_tmp = factory.LazyFunction(lambda: uniform(0, 99.9))
-    drybulb = factory.LazyFunction(lambda: uniform(0, 99.9))
-    wetbulb = factory.LazyFunction(lambda: uniform(0, 99.9))
+    atmosph_pres = factory.Faker('pydecimal', left_digits=4, right_digits=1)
+    surface_tmp = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    drybulb = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    wetbulb = factory.Faker('pydecimal', left_digits=2, right_digits=1)
     cloud = factory.Faker('text', max_nb_chars=5)
     vis_code = factory.Faker('lexify', text='??', letters='ABCDE-12345')
     weather_code = factory.Faker('lexify', text='??', letters='ABCDE-12345')
     water_color = factory.Faker('random_number', digits=randint(1, 38))
     transparency = factory.Faker('random_number', digits=randint(1, 38))
     wind_dir = factory.Faker('random_number', digits=randint(1, 38))
-    wind_speed = factory.LazyFunction(lambda: uniform(0, 99.9))
+    wind_speed = factory.Faker('pydecimal', left_digits=2, right_digits=1)
     swell_dir = factory.Faker('random_number', digits=randint(1, 38))
-    swell_height = factory.LazyFunction(lambda: uniform(0, 99.9))
+    swell_height = factory.Faker('pydecimal', left_digits=2, right_digits=1)
     swell_period = factory.Faker('random_number', digits=randint(1, 38))
     dupflag = factory.LazyFunction(lambda: choice(('Y', 'N')))
 
@@ -317,18 +319,18 @@ class Sedpol1Factory(SADCOModelFactory):
     class Meta:
         model = Sedpol1
 
-    arsenic = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    cadmium = factory.LazyFunction(lambda: uniform(0, 999.999))
-    chromium = factory.LazyFunction(lambda: uniform(0, 99999.999))
-    cobalt = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    copper = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    iron = factory.LazyFunction(lambda: uniform(0, 999999.999))
-    lead = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    manganese = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    mercury = factory.LazyFunction(lambda: uniform(0, 999.9999))
-    nickel = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    selenium = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    zinc = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    arsenic = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    cadmium = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    chromium = factory.Faker('pydecimal', left_digits=5, right_digits=3)
+    cobalt = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    copper = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    iron = factory.Faker('pydecimal', left_digits=6, right_digits=3)
+    lead = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    manganese = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    mercury = factory.Faker('pydecimal', left_digits=3, right_digits=4)
+    nickel = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    selenium = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    zinc = factory.Faker('pydecimal', left_digits=4, right_digits=3)
 
     sedphy = factory.SubFactory('factories.SedphyFactory', sedpol1=None)
 
@@ -338,12 +340,12 @@ class Sedpol2Factory(SADCOModelFactory):
         model = Sedpol2
 
     aluminium = factory.Faker('random_number', digits=5)
-    antimony = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    bismuth = factory.LazyFunction(lambda: uniform(0, 99.9))
-    molybdenum = factory.LazyFunction(lambda: uniform(0, 99.9))
-    silver = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    antimony = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    bismuth = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    molybdenum = factory.Faker('pydecimal', left_digits=0, right_digits=2)
+    silver = factory.Faker('pydecimal', left_digits=4, right_digits=3)
     titanium = factory.Faker('random_number', digits=4)
-    vanadium = factory.LazyFunction(lambda: uniform(0, 99.99))
+    vanadium = factory.Faker('pydecimal', left_digits=2, right_digits=2)
 
     sedphy = factory.SubFactory('factories.SedphyFactory', sedpol2=None)
 
@@ -352,11 +354,11 @@ class Sedchem1Factory(SADCOModelFactory):
     class Meta:
         model = Sedchem1
 
-    fluoride = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    kjn = factory.LazyFunction(lambda: uniform(0, 9999.99))
-    oxa = factory.LazyFunction(lambda: uniform(0, 999.999))
-    toc = factory.LazyFunction(lambda: uniform(0, 999.999))
-    ptot = factory.LazyFunction(lambda: uniform(0, 999.999))
+    fluoride = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    kjn = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    oxa = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    toc = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    ptot = factory.Faker('pydecimal', left_digits=3, right_digits=3)
 
     sedphy = factory.SubFactory('factories.SedphyFactory', sedchem1=None)
 
@@ -365,12 +367,12 @@ class Sedchem2Factory(SADCOModelFactory):
     class Meta:
         model = Sedchem2
 
-    calcium = factory.LazyFunction(lambda: uniform(0, 999999.999))
-    magnesium = factory.LazyFunction(lambda: uniform(0, 99999.99))
-    potassium = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    sodium = factory.LazyFunction(lambda: uniform(0, 99999.99))
-    strontium = factory.LazyFunction(lambda: uniform(0, 99999.999))
-    so3 = factory.LazyFunction(lambda: uniform(0, 999.999))
+    calcium = factory.Faker('pydecimal', left_digits=6, right_digits=3)
+    magnesium = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    potassium = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    sodium = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    strontium = factory.Faker('pydecimal', left_digits=5, right_digits=3)
+    so3 = factory.Faker('pydecimal', left_digits=3, right_digits=3)
 
     sedphy = factory.SubFactory('factories.SedphyFactory', sedchem2=None)
 
@@ -385,20 +387,20 @@ class SedphyFactory(SADCOModelFactory):
     standard_code = factory.Faker('random_number', digits=randint(1, 8))
     subdes = factory.Faker('text', max_nb_chars=5)
     spldattim = factory.Faker('date_time')
-    spldep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    spldep = factory.Faker('pydecimal', left_digits=4, right_digits=2)
     spldis = factory.Faker('random_number', digits=randint(1, 38))
-    splvol = factory.LazyFunction(lambda: uniform(0, 999.9))
-    sievsz = factory.LazyFunction(lambda: uniform(0, 999999.9))
-    kurt = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    skew = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    splvol = factory.Faker('pydecimal', left_digits=3, right_digits=1)
+    sievsz = factory.Faker('pydecimal', left_digits=6, right_digits=1)
+    kurt = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    skew = factory.Faker('pydecimal', left_digits=4, right_digits=3)
     meanpz = factory.Faker('random_number', digits=randint(1, 38))
     medipz = factory.Faker('random_number', digits=randint(1, 38))
-    pctsat = factory.LazyFunction(lambda: uniform(0, 99.9))
-    pctsil = factory.LazyFunction(lambda: uniform(0, 99.9))
+    pctsat = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    pctsil = factory.Faker('pydecimal', left_digits=2, right_digits=1)
     permty = factory.Faker('random_number', digits=randint(1, 38))
-    porsty = factory.LazyFunction(lambda: uniform(0, 99.9))
-    dwf = factory.LazyFunction(lambda: uniform(0, 999.9999))
-    cod = factory.LazyFunction(lambda: uniform(0, 99.999))
+    porsty = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    dwf = factory.Faker('pydecimal', left_digits=3, right_digits=4)
+    cod = factory.Faker('pydecimal', left_digits=2, right_digits=3)
 
     station = factory.SubFactory('factories.StationFactory', sedphy_list=None)
     sedchem1 = factory.RelatedFactory(Sedchem1Factory, factory_related_name='sedphy')
@@ -412,7 +414,7 @@ class WatcurrentsFactory(SADCOModelFactory):
         model = Watcurrents
 
     current_dir = factory.Faker('random_number', digits=randint(1, 38))
-    current_speed = factory.LazyFunction(lambda: round(uniform(0, 99.99), 2))
+    current_speed = factory.Faker('pydecimal', left_digits=2, right_digits=2)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watcurrents=None)
 
@@ -421,9 +423,9 @@ class WatchlFactory(SADCOModelFactory):
     class Meta:
         model = Watchl
 
-    chla = factory.LazyFunction(lambda: uniform(0, 999.999))
-    chlb = factory.LazyFunction(lambda: uniform(0, 999.999))
-    chlc = factory.LazyFunction(lambda: uniform(0, 999.999))
+    chla = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    chlb = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    chlc = factory.Faker('pydecimal', left_digits=3, right_digits=3)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watchl=None)
 
@@ -432,18 +434,18 @@ class Watpol1Factory(SADCOModelFactory):
     class Meta:
         model = Watpol1
 
-    arsenic = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    cadmium = factory.LazyFunction(lambda: uniform(0, 999.999))
-    chromium = factory.LazyFunction(lambda: uniform(0, 99999.999))
-    cobalt = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    copper = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    iron = factory.LazyFunction(lambda: uniform(0, 999999.999))
-    lead = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    manganese = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    mercury = factory.LazyFunction(lambda: uniform(0, 999.9999))
-    nickel = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    selenium = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    zinc = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    arsenic = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    cadmium = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    chromium = factory.Faker('pydecimal', left_digits=5, right_digits=3)
+    cobalt = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    copper = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    iron = factory.Faker('pydecimal', left_digits=6, right_digits=3)
+    lead = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    manganese = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    mercury = factory.Faker('pydecimal', left_digits=3, right_digits=4)
+    nickel = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    selenium = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    zinc = factory.Faker('pydecimal', left_digits=4, right_digits=3)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watpol1=None)
 
@@ -453,12 +455,12 @@ class Watpol2Factory(SADCOModelFactory):
         model = Watpol2
 
     aluminium = factory.LazyFunction(lambda: randint(0, 99999))
-    antimony = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    bismuth = factory.LazyFunction(lambda: uniform(0, 99.9))
-    molybdenum = factory.LazyFunction(lambda: uniform(0, 99.9))
-    silver = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    antimony = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    bismuth = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    molybdenum = factory.Faker('pydecimal', left_digits=2, right_digits=1)
+    silver = factory.Faker('pydecimal', left_digits=4, right_digits=3)
     titanium = factory.LazyFunction(lambda: randint(0, 9999))
-    vanadium = factory.LazyFunction(lambda: uniform(0, 99.99))
+    vanadium = factory.Faker('pydecimal', left_digits=2, right_digits=2)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watpol2=None)
 
@@ -467,16 +469,16 @@ class Watchem1Factory(SADCOModelFactory):
     class Meta:
         model = Watchem1
 
-    dic = factory.LazyFunction(lambda: round(uniform(0, 999999.999), 3))
-    doc = factory.LazyFunction(lambda: round(uniform(0, 9999.99), 2))
-    fluoride = factory.LazyFunction(lambda: round(uniform(0, 9999.999), 3))
-    iodene = factory.LazyFunction(lambda: round(uniform(0, 999.999), 3))
-    iodate = factory.LazyFunction(lambda: round(uniform(0, 999.999), 3))
-    kjn = factory.LazyFunction(lambda: round(uniform(0, 9999.99), 2))
-    nh3 = factory.LazyFunction(lambda: round(uniform(0, 999.99), 2))
-    nitrogen = factory.LazyFunction(lambda: round(uniform(0, 9999.99), 2))
-    oxa = factory.LazyFunction(lambda: round(uniform(0, 999.999), 3))
-    ph = factory.LazyFunction(lambda: round(uniform(0, 99.99), 2))
+    dic = factory.Faker('pydecimal', left_digits=6, right_digits=3)
+    doc = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    fluoride = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    iodene = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    iodate = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    kjn = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    nh3 = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    nitrogen = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    oxa = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    ph = factory.Faker('pydecimal', left_digits=2, right_digits=2)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watchem1=None)
 
@@ -485,17 +487,17 @@ class Watchem2Factory(SADCOModelFactory):
     class Meta:
         model = Watchem2
 
-    calcium = factory.LazyFunction(lambda: uniform(0, 999999.999))
-    cesium = factory.LazyFunction(lambda: uniform(0, 999.999))
-    hydrocarbons = factory.LazyFunction(lambda: uniform(0, 9999.99))
-    magnesium = factory.LazyFunction(lambda: uniform(0, 99999.99))
-    pah = factory.LazyFunction(lambda: uniform(0, 9999.99))
-    potassium = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    rubidium = factory.LazyFunction(lambda: uniform(0, 999.999))
-    sodium = factory.LazyFunction(lambda: uniform(0, 99999.99))
-    strontium = factory.LazyFunction(lambda: uniform(0, 99999.999))
-    so4 = factory.LazyFunction(lambda: uniform(0, 99.9999))
-    sussol = factory.LazyFunction(lambda: uniform(0, 999.999))
+    calcium = factory.Faker('pydecimal', left_digits=6, right_digits=3)
+    cesium = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    hydrocarbons = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    magnesium = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    pah = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    potassium = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    rubidium = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    sodium = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    strontium = factory.Faker('pydecimal', left_digits=5, right_digits=3)
+    so4 = factory.Faker('pydecimal', left_digits=2, right_digits=4)
+    sussol = factory.Faker('pydecimal', left_digits=3, right_digits=3)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watchem2=None)
 
@@ -504,13 +506,13 @@ class WatnutFactory(SADCOModelFactory):
     class Meta:
         model = Watnut
 
-    no2 = factory.LazyFunction(lambda: uniform(0, 999.99))
-    no3 = factory.LazyFunction(lambda: uniform(0, 999.99))
-    p = factory.LazyFunction(lambda: uniform(0, 999.999))
-    po4 = factory.LazyFunction(lambda: uniform(0, 999.99))
-    ptot = factory.LazyFunction(lambda: uniform(0, 999.999))
-    sio3 = factory.LazyFunction(lambda: uniform(0, 9999.99))
-    sio4 = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    no2 = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    no3 = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    p = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    po4 = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    ptot = factory.Faker('pydecimal', left_digits=3, right_digits=3)
+    sio3 = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    sio4 = factory.Faker('pydecimal', left_digits=4, right_digits=2)
 
     watphy = factory.SubFactory('factories.WatphyFactory', watnut=None)
 
@@ -524,16 +526,16 @@ class WatphyFactory(SADCOModelFactory):
     standard_code = factory.Faker('random_number', digits=randint(1, 38))
     subdes = factory.Faker('lexify', text='?????')
     spldattim = factory.Faker('date')
-    spldep = factory.LazyFunction(lambda: uniform(0, 9999.999))
+    spldep = factory.Faker('pydecimal', left_digits=4, right_digits=3)
     filtered = factory.Faker('random_element', elements=('Y', 'N'))
-    disoxygen = factory.LazyFunction(lambda: uniform(0, 99.99))
-    salinity = factory.LazyFunction(lambda: uniform(0, 99.99))
-    temperature = factory.LazyFunction(lambda: uniform(0, 99.99))
+    disoxygen = factory.Faker('pydecimal', left_digits=2, right_digits=2)
+    salinity = factory.Faker('pydecimal', left_digits=2, right_digits=2)
+    temperature = factory.Faker('pydecimal', left_digits=2, right_digits=2)
     sound_flag = factory.Faker('random_element', elements=('Y', 'N'))
-    soundv = factory.LazyFunction(lambda: uniform(0, 9999.9))
-    turbidity = factory.LazyFunction(lambda: uniform(0, 9999.999))
-    pressure = factory.LazyFunction(lambda: uniform(0, 99999.99))
-    fluorescence = factory.LazyFunction(lambda: uniform(0, 9999.9999))
+    soundv = factory.Faker('pydecimal', left_digits=4, right_digits=1)
+    turbidity = factory.Faker('pydecimal', left_digits=4, right_digits=3)
+    pressure = factory.Faker('pydecimal', left_digits=5, right_digits=2)
+    fluorescence = factory.Faker('pydecimal', left_digits=4, right_digits=4)
 
     station = factory.SubFactory('factories.StationFactory', watphy_list=None)
     sampling_device = factory.SubFactory(SamplingDeviceFactory)
@@ -557,11 +559,11 @@ class StationFactory(SADCOModelFactory):
     date_end = factory.Faker('date')
     daynull = factory.Faker('random_element', elements=('Y', 'N'))
     stnnam = factory.LazyFunction(lambda: fake.city()[:10])
-    stndep = factory.LazyFunction(lambda: uniform(0, 9999.99))
-    offshd = factory.LazyFunction(lambda: uniform(0, 999.999))
+    stndep = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    offshd = factory.Faker('pydecimal', left_digits=3, right_digits=3)
     passkey = factory.Faker('random_number', digits=randint(0, 8))
     dupflag = factory.Faker('random_element', elements=('Y', 'N'))
-    max_spldep = factory.LazyFunction(lambda: uniform(0, 9999.99))
+    max_spldep = factory.Faker('pydecimal', left_digits=4, right_digits=2)
     lat = factory.Faker('latitude')
     lon = factory.Faker('longitude')
     yearmon = fake.month() + "-" + str(fake.year())
