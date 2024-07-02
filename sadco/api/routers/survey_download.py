@@ -62,19 +62,16 @@ def get_currents_items(survey_id: str) -> list:
             time_interval=cur_depth.time_interval,
             passkey=cur_depth.passkey,
             parameters=cur_depth.parameters,
-            datetime=cur_data.datetime,
-            speed=cur_data.speed,
-            direction=cur_data.direction,
-            temperature=cur_data.temperature,
-            vert_velocity=cur_data.vert_velocity,
-            f_speed_9=cur_data.f_speed_9,
-            f_direction_9=cur_data.f_direction_9,
-            f_speed_14=cur_data.f_speed_14,
-            f_direction_14=cur_data.f_direction_14,
-            pressure=cur_data.pressure,
-            ph=cur_data.cur_watphy.ph,
-            salinity=cur_data.cur_watphy.salinity,
-            dissolved_oxygen=cur_data.cur_watphy.dis_oxy,
+            **get_table_data(
+                cur_data,
+                [
+                    'code',
+                    'depth_code'
+                ]
+            ),
+            ph=cur_data.cur_watphy.ph if cur_data.cur_watphy else None,
+            salinity=cur_data.cur_watphy.salinity if cur_data.cur_watphy else None,
+            dissolved_oxygen=cur_data.cur_watphy.dis_oxy if cur_data.cur_watphy else None,
         ).dict()
         for row in results
         for cur_depth in row.CurMooring.cur_depths
@@ -583,8 +580,8 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
 def get_table_data(fetched_model, fields_to_ignore: list = None) -> dict:
     """
     Builds and returns a dictionary of the fields from an api model and its respective db value.
-    :param fetched_model: fetched model whose values will be used.
-    :param fields_to_ignore: fields to ignore.
+    :param fetched_model: fetched db model whose values will be used.
+    :param fields_to_ignore: fields from the model to be ignored.
     """
     table_data_dict = fetched_model.__dict__.copy()
     del table_data_dict['_sa_instance_state']
