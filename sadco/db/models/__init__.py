@@ -28,3 +28,6 @@ from .wet_station import WetStation
 from .wet_period_counts import WetPeriodCounts
 from .wet_period import WetPeriod
 from .wet_data import WetData
+from .wav_station import WavStation
+from .wav_data import WavData
+from .wav_period import WavPeriod
