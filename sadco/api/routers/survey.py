@@ -327,7 +327,7 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
 
         data_types_model.water = water_model
 
-    if inventory_statistics.sedphy_cnt > 0:
+    if inventory_statistics.sedphy_cnt and inventory_statistics.sedphy_cnt > 0:
         sediment_model = SedimentModel(
             record_count=inventory_statistics.sedphy_cnt
         )
@@ -344,7 +344,7 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
 
         data_types_model.sediment = sediment_model
 
-    if inventory_statistics.weather_cnt > 0:
+    if inventory_statistics.weather_cnt and inventory_statistics.weather_cnt > 0:
         data_types_model.weather = WeatherModel(
             record_count=inventory_statistics.weather_cnt
         )
