@@ -9,4 +9,4 @@ from .survey_download import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroSedimentChemistryDownloadModel, HydroSedimentPollutionDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroWeatherDownloadModel, CurrentsDownloadModel,
-                              HydroCurrentsDownloadModel)
+                              HydroCurrentsDownloadModel, WeatherDownloadModel, WavesDownloadModel)

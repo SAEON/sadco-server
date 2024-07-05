@@ -8,7 +8,7 @@ class WavPeriod(Base):
     __tablename__ = 'wav_period'
 
     station_id = Column(String(4), ForeignKey('sadco.wav_station.station_id'), nullable=False, primary_key=True)
-    yearp = Column(Numeric(38, 0), nullable=False)
+    yearp = Column(Numeric(38, 0), nullable=False, primary_key=True)
     m01 = Column(Numeric(38, 0))
     m02 = Column(Numeric(38, 0))
     m03 = Column(Numeric(38, 0))

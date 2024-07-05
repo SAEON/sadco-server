@@ -8,16 +8,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.api.models.survey_download import WeatherDownloadModel
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
-                             Inventory, WetStation, WetPeriod)
+                             Inventory, WetStation, WetPeriod, WavStation, WavPeriod)
 
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
                               HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
-                              HydroCurrentsDownloadModel, CurrentsDownloadModel)
+                              HydroCurrentsDownloadModel, CurrentsDownloadModel, WeatherDownloadModel,
+                              WavesDownloadModel)
 
 from sadco.db import Session
 from sadco.const import SADCOScope, DataType
@@ -140,6 +140,55 @@ def get_weather_items(survey_id: str) -> list:
         for wet_station in row.Inventory.wet_stations
         for wet_period in wet_station.wet_periods
         for wet_data in wet_period.wet_data_list
+    ]
+
+
+@router.get(
+    '/waves/{survey_id}',
+    response_class=StreamingResponse,
+    dependencies=[Depends(Authorize(SADCOScope.WAVES_DOWNLOAD))]
+)
+async def download_currents_survey_data(
+        survey_id: str,
+        data_type: str = Query(None, title='Data Type')
+):
+    items = get_waves_items(survey_id)
+
+    return get_zipped_csv_response(items, survey_id, data_type)
+
+
+def get_waves_items(survey_id: str) -> list:
+    stmt = (
+        select(
+            Inventory
+        ).where(Inventory.survey_id == survey_id.replace('-', '/')).
+        options(
+            joinedload(Inventory.wav_stations).
+            joinedload(WavStation.wav_data_list)
+        )
+    )
+
+    if not (results := Session.execute(stmt).unique()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return [
+        WavesDownloadModel(
+            station_name=wav_station.name,
+            latitude=wav_station.latitude,
+            longitude=wav_station.longitude,
+            instrument_depth=wav_station.instrument_depth,
+            water_depth=wav_station.water_depth,
+            **get_table_data(
+                wav_data,
+                [
+                    'code',
+                    'station_id'
+                ]
+            )
+        ).dict()
+        for row in results
+        for wav_station in row.Inventory.wav_stations
+        for wav_data in wav_station.wav_data_list
     ]
 
 

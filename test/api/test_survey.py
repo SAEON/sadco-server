@@ -276,3 +276,43 @@ def test_fetch_currents_survey(api, current_mooring, scopes):
         current_depths = json['mooring_details']
 
         assert len(current_depths) == len(current_mooring.cur_depths)
+
+
+@pytest.mark.require_scope(SADCOScope.WEATHER_READ)
+def test_fetch_weather_survey(api, weather_station, scopes):
+    authorized = SADCOScope.WEATHER_READ in scopes
+
+    route = '/survey/weather/{}'.format(weather_station.survey_id)
+
+    r = api(scopes).get(route)
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        weather_period_counts = json['period_counts']
+
+        assert len(weather_period_counts) == len(weather_station.wet_period_counts)
+
+
+@pytest.mark.require_scope(SADCOScope.WAVES_READ)
+def test_fetch_waves_survey(api, wave_station, scopes):
+    authorized = SADCOScope.WAVES_READ in scopes
+
+    route = '/survey/waves/{}'.format(wave_station.survey_id)
+
+    r = api(scopes).get(route)
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        wave_periods = json['period_counts']
+
+        assert len(wave_periods) == len(wave_station.wav_periods)

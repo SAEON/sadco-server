@@ -1,7 +1,7 @@
 from sadco.db.models import (Survey, Inventory, Watphy, Station, Sedphy, Watnut, Watchem1, Watchem2, Watpol1, Watpol2,
                              Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2, InvStats,
-                             CurMooring, CurDepth, CurData,
-                             CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData)
+                             CurMooring, CurDepth, CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod,
+                             WetPeriodCounts, WetData, WavStation, WavData, WavPeriod)
 from test.factories import InventoryFactory
 from test import TestSession
 
@@ -16,6 +16,8 @@ def test_create_read_all():
     assert_current_data(created_inventory)
 
     assert_weather_data(created_inventory)
+
+    assert_waves_data(created_inventory)
 
 
 def assert_inventory_data(created_inventory):
@@ -196,6 +198,29 @@ def assert_weather_data(created_inventory):
     ).first()
 
     assert_model_equality(created_wet_data, fetched_wet_data)
+
+
+def assert_waves_data(created_inventory):
+    created_wav_station = created_inventory.wav_stations[0]
+
+    fetched_wav_station = TestSession.query(WavStation).filter(
+        WavStation.station_id == created_wav_station.station_id).first()
+
+    assert_model_equality(created_wav_station, fetched_wav_station)
+
+    created_wav_data = created_wav_station.wav_data_list[0]
+
+    fetched_wav_data = TestSession.query(WavData).filter(
+        WavData.code == created_wav_data.code).first()
+
+    assert_model_equality(created_wav_data, fetched_wav_data)
+
+    created_wav_period = created_wav_station.wav_periods[0]
+
+    fetched_wav_period = TestSession.query(WavPeriod).filter(
+        WavPeriod.station_id == created_wav_period.station_id).first()
+
+    assert_model_equality(created_wav_period, fetched_wav_period)
 
 
 def assert_model_equality(model1, model2):

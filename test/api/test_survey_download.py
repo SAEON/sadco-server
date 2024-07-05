@@ -10,7 +10,7 @@ from test.factories import (SurveyFactory, StationFactory, WatphyFactory, Watche
                             SedphyFactory, Sedpol1Factory, Sedpol2Factory, Sedchem1Factory, Sedchem2Factory,
                             CurrentMooringFactory,
                             CurrentDepthFactory, EDMInstrument2Factory, CurrentDataFactory, CurrentWatphyFactory,
-                            WetStationFactory, WetPeriodFactory, WetDataFactory)
+                            WetStationFactory, WetPeriodFactory, WetDataFactory, WavStationFactory, WavDataFactory)
 
 from sadco.const import SADCOScope
 from test.api import assert_forbidden
@@ -512,7 +512,8 @@ def set_current_data_and_watphy_records(current_depth):
 
 @pytest.fixture
 def weather_survey_download():
-    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None, wet_stations=None)
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None, wet_stations=None,
+                                        wav_stations=None)
     wet_station = WetStationFactory.create(
         survey_id=inventory.survey_id,
         inventory=inventory,
@@ -587,6 +588,82 @@ def set_wet_data(wet_period):
     )
 
 
+@pytest.fixture
+def waves_survey_download():
+    inventory = InventoryFactory.create(survey_id=TEST_SURVEY_ID, survey=None, cur_moorings=None, wet_stations=None,
+                                        wav_stations=None)
+    wav_station = WavStationFactory.create(
+        survey_id=inventory.survey_id,
+        inventory=inventory,
+        wav_data_list=None,
+        latitude=30,
+        longitude=70,
+        instrument_depth=150,
+        water_depth=1030,
+        name='MarionWeather'
+    )
+
+    set_wav_data(wav_station)
+
+    return wav_station
+
+
+def set_wav_data(wav_station):
+    WavDataFactory(
+        wav_station=wav_station,
+        date_time='1990/01/01',
+        number_readings=104,
+        record_length=None,
+        deltaf=12.8,
+        deltat=None,
+        frequency=45.37,
+        qp=None,
+        tb=12.6,
+        te=None,
+        wap=77.3,
+        eps=None,
+        hmo=23.4,
+        h1=None,
+        hs=65.2,
+        hmax=None,
+        tc=8.5,
+        tp=None,
+        tz=3.7,
+        ave_direction=None,
+        ave_spreading=12.6,
+        instrument_code=None,
+        mean_direction=36,
+        mean_spreading=None
+    )
+
+    WavDataFactory(
+        wav_station=wav_station,
+        date_time='1991/01/01',
+        number_readings=None,
+        record_length=2.5,
+        deltaf=None,
+        deltat=34.98,
+        frequency=None,
+        qp=0.23,
+        tb=None,
+        te=18,
+        wap=None,
+        eps=97.3,
+        hmo=None,
+        h1=24.6,
+        hs=None,
+        hmax=3.2,
+        tc=None,
+        tp=90,
+        tz=None,
+        ave_direction=33,
+        ave_spreading=None,
+        instrument_code=4,
+        mean_direction=None,
+        mean_spreading=16.8
+    )
+
+
 @pytest.mark.require_scope(SADCOScope.HYDRO_DOWNLOAD)
 def test_download_all_hydro_data_types(api, hydro_survey_download, scopes, hydro_data_type):
     authorized = SADCOScope.HYDRO_DOWNLOAD in scopes
@@ -626,7 +703,7 @@ def test_download_currents_data(api, currents_survey_download, scopes):
 
 
 @pytest.mark.require_scope(SADCOScope.WEATHER_DOWNLOAD)
-def test_download_currents_data(api, weather_survey_download, scopes):
+def test_download_weather_data(api, weather_survey_download, scopes):
     authorized = SADCOScope.WEATHER_DOWNLOAD in scopes
 
     route = '/survey/download/weather/{}'.format(weather_survey_download.survey_id.replace('/', '-'))
@@ -642,6 +719,25 @@ def test_download_currents_data(api, weather_survey_download, scopes):
         assert_forbidden(r)
     else:
         assert_download_result(r, 'weather')
+
+
+@pytest.mark.require_scope(SADCOScope.WAVES_DOWNLOAD)
+def test_download_waves_data(api, waves_survey_download, scopes):
+    authorized = SADCOScope.WAVES_DOWNLOAD in scopes
+
+    route = '/survey/download/waves/{}'.format(waves_survey_download.survey_id.replace('/', '-'))
+
+    r = api(scopes).get(
+        route,
+        params={
+            'data_type': None
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_download_result(r, 'waves')
 
 
 def assert_download_result(response, compare_file_name):

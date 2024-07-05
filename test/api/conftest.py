@@ -5,10 +5,10 @@ from collections import namedtuple
 from odp.lib.hydra import HydraAdminAPI
 from test.factories import (Watchem1Factory, Watchem2Factory, Watpol1Factory, Watpol2Factory, WatcurrentsFactory,
                             WatnutFactory, WatphyFactory, StationFactory, SurveyFactory, InventoryFactory,
-                            SedphyFactory, Sedchem2Factory,
-                            Sedchem1Factory, Sedpol2Factory, Sedpol1Factory, PlanamFactory, InstitutesFactory,
-                            WeatherFactory, CurrentsFactory, CurrentMooringFactory, CurrentDepthFactory,
-                            CurrentDataFactory)
+                            SedphyFactory, Sedchem2Factory, Sedchem1Factory, Sedpol2Factory, Sedpol1Factory,
+                            PlanamFactory, InstitutesFactory, WeatherFactory, CurrentsFactory, CurrentMooringFactory,
+                            CurrentDepthFactory, CurrentDataFactory, WetStationFactory, WetPeriodFactory,
+                            WavStationFactory, WavPeriodFactory, WetPeriodCountsFactory)
 from test.api import all_scopes_excluding
 
 from sadco.const import SADCOScope, DataType
@@ -86,7 +86,7 @@ def inventories(planam, institute):
 
 @pytest.fixture
 def inventory():
-    return InventoryFactory.create(survey=None, cur_moorings=None)
+    return InventoryFactory.create(survey=None, cur_moorings=None, wet_stations=None, wav_stations=None)
 
 
 @pytest.fixture
@@ -101,6 +101,20 @@ def current_mooring(inventory):
     current_mooring = CurrentMooringFactory.create(inventory=inventory)
     set_current_depth_batch(current_mooring)
     return current_mooring
+
+
+@pytest.fixture
+def weather_station(inventory):
+    wet_station = WetStationFactory.create(inventory=inventory)
+    set_weather_period_counts_batch(wet_station)
+    return wet_station
+
+
+@pytest.fixture
+def wave_station(inventory):
+    wav_station = WavStationFactory.create(inventory=inventory)
+    set_wav_periods_batch(wav_station)
+    return wav_station
 
 
 def set_station_batch(survey):
@@ -144,6 +158,16 @@ def set_current_depth_batch(current_mooring):
 def set_current_data_batch(current_depth):
     for _ in range(randint(1, 10)):
         CurrentDataFactory.create(cur_depth=current_depth)
+
+
+def set_weather_period_counts_batch(wet_station):
+    for _ in range(randint(1, 10)):
+        WetPeriodCountsFactory.create(wet_station=wet_station)
+
+
+def set_wav_periods_batch(wav_station):
+    for _ in range(randint(1, 10)):
+        WavPeriodFactory.create(wav_station=wav_station)
 
 
 @pytest.fixture(params=[

@@ -9,7 +9,8 @@ import sadco.db
 from sadco.db.models import (Inventory, Survey, Planam, Institutes, SurveyType, Scientists, Station, StatusMode, Watphy,
                              SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy,
                              Sedchem1, Sedchem2, Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring,
-                             CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData)
+                             CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData,
+                             WavStation, WavData, WavPeriod)
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -98,6 +99,78 @@ class EDMInstrument2Factory(SADCOModelFactory):
 
     # cur_depth = factory.RelatedFactory('factories.CurrentDepthFactory', factory_related_name='edm_instrument2')
     # wet_period = factory.RelatedFactory('factories.WetPeriodFactory', factory_related_name='edm_instrument2')
+
+
+class WavPeriodFactory(SADCOModelFactory):
+    class Meta:
+        model = WavPeriod
+
+    station_id = factory.SelfAttribute('wav_station.station_id')
+    yearp = factory.Sequence(lambda n: fake.random_number(digits=4) + n)
+    m01 = factory.Faker('random_number', digits=randint(1, 30))
+    m02 = factory.Faker('random_number', digits=randint(1, 30))
+    m03 = factory.Faker('random_number', digits=randint(1, 30))
+    m04 = factory.Faker('random_number', digits=randint(1, 30))
+    m05 = factory.Faker('random_number', digits=randint(1, 30))
+    m06 = factory.Faker('random_number', digits=randint(1, 30))
+    m07 = factory.Faker('random_number', digits=randint(1, 30))
+    m08 = factory.Faker('random_number', digits=randint(1, 30))
+    m09 = factory.Faker('random_number', digits=randint(1, 30))
+    m10 = factory.Faker('random_number', digits=randint(1, 30))
+    m11 = factory.Faker('random_number', digits=randint(1, 30))
+    m12 = factory.Faker('random_number', digits=randint(1, 30))
+
+    wav_station = factory.SubFactory('factories.WavStationFactory', wav_periods=None)
+
+
+class WavDataFactory(SADCOModelFactory):
+    class Meta:
+        model = WavData
+
+    code = factory.Sequence(lambda n: fake.random_number(digits=8) + n)
+    station_id = factory.SelfAttribute('wav_station.station_id')
+    date_time = factory.Faker("date_time")
+    number_readings = factory.Faker("pyint")
+    record_length = factory.Faker('pydecimal', left_digits=3, right_digits=1)
+    deltaf = factory.Faker('pydecimal', left_digits=2, right_digits=6)
+    deltat = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    frequency = factory.Faker('pydecimal', left_digits=2, right_digits=6)
+    qp = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    tb = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    te = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    wap = factory.Faker('pydecimal', left_digits=6, right_digits=2)
+    eps = factory.Faker('pydecimal', left_digits=2, right_digits=3)
+    hmo = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    h1 = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    hs = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    hmax = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    tc = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    tp = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    tz = factory.Faker('pydecimal', left_digits=3, right_digits=2)
+    ave_direction = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    ave_spreading = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    instrument_code = factory.Faker("pyint")
+    mean_direction = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+    mean_spreading = factory.Faker('pydecimal', left_digits=4, right_digits=2)
+
+    wav_station = factory.SubFactory('factories.WavStationFactory', wav_data_list=None)
+
+
+class WavStationFactory(SADCOModelFactory):
+    class Meta:
+        model = WavStation
+
+    station_id = factory.Faker('lexify', text='????', letters='ABCDE-12345')
+    survey_id = factory.SelfAttribute('inventory.survey_id')
+    latitude = factory.Faker('pydecimal', left_digits=3, right_digits=5)
+    longitude = factory.Faker('pydecimal', left_digits=3, right_digits=5)
+    instrument_depth = factory.Faker('random_number', digits=randint(1, 30))
+    name = factory.LazyFunction(lambda: fake.name()[:30])
+    water_depth = factory.Faker('random_number', digits=randint(1, 30))
+
+    inventory = factory.SubFactory('factories.InventoryFactory', wav_stations=None)
+    wav_data_list = factory.RelatedFactory(WavDataFactory, factory_related_name='wav_station')
+    wav_periods = factory.RelatedFactory(WavPeriodFactory, factory_related_name='wav_station')
 
 
 class WetDataFactory(SADCOModelFactory):
@@ -701,6 +774,7 @@ class InventoryFactory(SADCOModelFactory):
     planam = factory.SubFactory(PlanamFactory)
     cur_moorings = factory.RelatedFactory(CurrentMooringFactory, factory_related_name='inventory')
     wet_stations = factory.RelatedFactory(WetStationFactory, factory_related_name='inventory')
+    wav_stations = factory.RelatedFactory(WavStationFactory, factory_related_name='inventory')
     institute = factory.SubFactory(InstitutesFactory)
     survey_type = factory.SubFactory(SurveyTypeFactory)
     scientist_1 = factory.SubFactory(ScientistsFactory)

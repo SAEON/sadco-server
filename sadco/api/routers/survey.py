@@ -463,7 +463,7 @@ async def get_weather_survey(
 @router.get(
     '/waves/{survey_id}',
     response_model=PeriodsSurveyModel,
-    dependencies=[Depends(Authorize(SADCOScope.WEATHER_READ))],
+    dependencies=[Depends(Authorize(SADCOScope.WAVES_READ))],
 )
 async def get_waves_survey(
         survey_id: str
