@@ -379,6 +379,17 @@ def get_hydro_current_count(survey_id: str) -> int:
 
 
 @router.get(
+    '/utr/{survey_id}',
+    response_model=CurrentsSurveyModel,
+    dependencies=[Depends(Authorize(SADCOScope.UTR_READ))],
+)
+async def get_utr_survey(
+        survey_id: str
+):
+    return get_mooring_details(survey_id)
+
+
+@router.get(
     '/currents/{survey_id}',
     response_model=CurrentsSurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.CURRENTS_READ))],
@@ -386,6 +397,10 @@ def get_hydro_current_count(survey_id: str) -> int:
 async def get_currents_survey(
         survey_id: str
 ):
+    return get_mooring_details(survey_id)
+
+
+def get_mooring_details(survey_id: str):
     stmt = (
         select(
             Inventory
@@ -400,11 +415,11 @@ async def get_currents_survey(
 
     return CurrentsSurveyModel(
         **get_survey_model(result.Inventory).dict(),
-        mooring_details=get_mooring_details(result.Inventory.cur_moorings)
+        mooring_details=get_depth_details(result.Inventory.cur_moorings)
     )
 
 
-def get_mooring_details(current_moorings: list[CurMooring]) -> list[CurrentDepthModel]:
+def get_depth_details(current_moorings: list[CurMooring]) -> list[CurrentDepthModel]:
     return [
         CurrentDepthModel(
             depth=row.CurDepth.spldep,

@@ -683,6 +683,25 @@ def test_download_all_hydro_data_types(api, hydro_survey_download, scopes, hydro
         assert_download_result(r, f'hydro_{hydro_data_type}')
 
 
+@pytest.mark.require_scope(SADCOScope.UTR_DOWNLOAD)
+def test_download_utr_data(api, currents_survey_download, scopes):
+    authorized = SADCOScope.UTR_DOWNLOAD in scopes
+
+    route = '/survey/download/utr/{}'.format(currents_survey_download.survey_id.replace('/', '-'))
+
+    r = api(scopes).get(
+        route,
+        params={
+            'data_type': None
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_download_result(r, 'currents')
+
+
 @pytest.mark.require_scope(SADCOScope.CURRENTS_DOWNLOAD)
 def test_download_currents_data(api, currents_survey_download, scopes):
     authorized = SADCOScope.CURRENTS_DOWNLOAD in scopes
