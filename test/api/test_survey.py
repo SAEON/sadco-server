@@ -316,3 +316,65 @@ def test_fetch_waves_survey(api, wave_station, scopes):
         wave_periods = json['period_counts']
 
         assert len(wave_periods) == len(wave_station.wav_periods)
+
+
+@pytest.mark.require_scope(SADCOScope.UTR_READ)
+def test_fetch_utr_survey(api, current_mooring, scopes):
+    authorized = SADCOScope.UTR_READ in scopes
+
+    route = '/survey/utr/{}'.format(current_mooring.survey_id)
+
+    r = api(scopes).get(route)
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        current_depths = json['mooring_details']
+
+        assert len(current_depths) == len(current_mooring.cur_depths)
+
+
+@pytest.mark.require_scope(SADCOScope.ECHO_SOUNDING_READ)
+def test_fetch_echo_sounding_survey(api, echo_sounding_inventory, scopes):
+    authorized = SADCOScope.ECHO_SOUNDING_READ in scopes
+
+    route = '/survey/echo-sounding/{}'.format(echo_sounding_inventory.survey_id)
+
+    r = api(scopes).get(route)
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        assert json['project_name'] == echo_sounding_inventory.project_name
+        assert json['date_start'] == echo_sounding_inventory.date_start.strftime('%Y-%m-%d')
+        assert json['date_end'] == echo_sounding_inventory.date_end.strftime('%Y-%m-%d')
+        assert json['survey_type'] == echo_sounding_inventory.survey_type.name
+
+
+@pytest.mark.require_scope(SADCOScope.UNKNOWN_READ)
+def test_fetch_unknown_survey(api, unknown_inventory, scopes):
+    authorized = SADCOScope.UNKNOWN_READ in scopes
+
+    route = '/survey/unknown/{}'.format(unknown_inventory.survey_id)
+
+    r = api(scopes).get(route)
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        assert json['project_name'] == unknown_inventory.project_name
+        assert json['date_start'] == unknown_inventory.date_start.strftime('%Y-%m-%d')
+        assert json['date_end'] == unknown_inventory.date_end.strftime('%Y-%m-%d')
+        assert json['survey_type'] == unknown_inventory.survey_type.name

@@ -8,7 +8,7 @@ from test.factories import (Watchem1Factory, Watchem2Factory, Watpol1Factory, Wa
                             SedphyFactory, Sedchem2Factory, Sedchem1Factory, Sedpol2Factory, Sedpol1Factory,
                             PlanamFactory, InstitutesFactory, WeatherFactory, CurrentsFactory, CurrentMooringFactory,
                             CurrentDepthFactory, CurrentDataFactory, WetStationFactory, WetPeriodFactory,
-                            WavStationFactory, WavPeriodFactory, WetPeriodCountsFactory)
+                            WavStationFactory, WavPeriodFactory, WetPeriodCountsFactory, SurveyTypeFactory)
 from test.api import all_scopes_excluding
 
 from sadco.const import SADCOScope, DataType
@@ -37,6 +37,7 @@ def api(request, monkeypatch):
 
     :param scopes: iterable of ODPScope granted to the test client/user
     """
+
     def api_test_client(
             scopes: list[SADCOScope],
             *,
@@ -87,6 +88,24 @@ def inventories(planam, institute):
 @pytest.fixture
 def inventory():
     return InventoryFactory.create(survey=None, cur_moorings=None, wet_stations=None, wav_stations=None)
+
+
+@pytest.fixture
+def echo_sounding_inventory():
+    survey_type = SurveyTypeFactory.create(
+        name='Echo-Sounding'
+    )
+    return InventoryFactory.create(survey=None, cur_moorings=None, wet_stations=None, wav_stations=None,
+                                   survey_type=survey_type)
+
+
+@pytest.fixture
+def unknown_inventory():
+    survey_type = SurveyTypeFactory.create(
+        name='Unknown'
+    )
+    return InventoryFactory.create(survey=None, cur_moorings=None, wet_stations=None, wav_stations=None,
+                                   survey_type=survey_type)
 
 
 @pytest.fixture
@@ -171,17 +190,17 @@ def set_wav_periods_batch(wav_station):
 
 
 @pytest.fixture(params=[
-        DataType.WATER.value,
-        DataType.WATERNUTRIENTS.value,
-        DataType.WATERCHEMISTRY.value,
-        DataType.WATERPOLLUTION.value,
-        DataType.WATERNUTRIENTSANDCHEMISTRY.value,
-        DataType.CURRENTS.value,
-        DataType.WEATHER.value,
-        DataType.SEDIMENT.value,
-        DataType.SEDIMENTCHEMISTRY.value,
-        DataType.SEDIMENTPOLLUTION.value
-    ])
+    DataType.WATER.value,
+    DataType.WATERNUTRIENTS.value,
+    DataType.WATERCHEMISTRY.value,
+    DataType.WATERPOLLUTION.value,
+    DataType.WATERNUTRIENTSANDCHEMISTRY.value,
+    DataType.CURRENTS.value,
+    DataType.WEATHER.value,
+    DataType.SEDIMENT.value,
+    DataType.SEDIMENTCHEMISTRY.value,
+    DataType.SEDIMENTPOLLUTION.value
+])
 def hydro_data_type(request):
     return request.param
 

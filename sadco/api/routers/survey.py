@@ -20,7 +20,7 @@ from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, Wa
 
 from sadco.api.lib.auth import Authorize
 from sadco.db import Session
-from sadco.const import SADCOScope
+from sadco.const import SADCOScope, SurveyType as ConstSurveyType
 
 router = APIRouter()
 
@@ -255,17 +255,7 @@ def get_survey_model(inventory: Inventory) -> SurveyModel:
     """
     Get the generic survey model
     """
-    station = [
-        StationModel(
-            latitude=-station.latitude,
-            longitude=station.longitude
-        ) for station in inventory.survey.stations
-    ] if inventory.survey else [
-        StationModel(
-            latitude=-inventory.lat_north,
-            longitude=inventory.long_east
-        )
-    ]
+    stations = get_stations(inventory)
 
     return SurveyModel(
         id=inventory.survey_id,
@@ -282,8 +272,35 @@ def get_survey_model(inventory: Inventory) -> SurveyModel:
         long_west=inventory.long_west,
         long_east=inventory.long_east,
         survey_type=inventory.survey_type.name,
-        stations=station
+        stations=stations
     )
+
+
+def get_stations(inventory: Inventory) -> list[StationModel]:
+    stations = []
+    match inventory.survey_type.name.lower():
+        case ConstSurveyType.HYDRO.value:
+            stations = inventory.survey.stations
+        case ConstSurveyType.CURRENTS.value | ConstSurveyType.UTR.value:
+            stations = inventory.cur_moorings
+        case ConstSurveyType.WEATHER.value:
+            stations = inventory.wet_stations
+        case ConstSurveyType.WAVES.value:
+            stations = inventory.wav_stations
+        case ConstSurveyType.ECHOSOUNDING.value | ConstSurveyType.UNKNOWN.value:
+            return [StationModel(
+                latitude=-inventory.lat_north,
+                longitude=inventory.long_west,
+            )]
+
+    station_models = [
+        StationModel(
+            latitude=-station.latitude,
+            longitude=station.longitude
+        ) for station in stations
+    ]
+
+    return station_models
 
 
 def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
@@ -532,6 +549,44 @@ def get_period_counts_total(period_counts) -> int:
             total += value
 
     return total
+
+
+@router.get(
+    '/echo-sounding/{survey_id}',
+    response_model=SurveyModel,
+    dependencies=[Depends(Authorize(SADCOScope.ECHO_SOUNDING_READ))],
+)
+async def get_echo_sounding_survey(
+        survey_id: str
+):
+    return get_survey_without_details(survey_id)
+
+
+@router.get(
+    '/unknown/{survey_id}',
+    response_model=SurveyModel,
+    dependencies=[Depends(Authorize(SADCOScope.UNKNOWN_READ))],
+)
+async def get_unknown_survey(
+        survey_id: str
+):
+    return get_survey_without_details(survey_id)
+
+
+def get_survey_without_details(survey_id: str) -> SurveyModel:
+    stmt = (
+        select(
+            Inventory
+        ).
+        filter(
+            Inventory.survey_id == survey_id.replace('-', '/')
+        )
+    )
+
+    if not (result := Session.execute(stmt).one_or_none()):
+        raise HTTPException(HTTP_404_NOT_FOUND)
+
+    return get_survey_model(result.Inventory)
 
 
 def get_data_types_manually(survey_id: str) -> DataTypesModel:  # pragma: no cover
