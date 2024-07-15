@@ -555,13 +555,13 @@ def get_hydro_water_nutrients_and_chemistry_download_model(
 ) -> HydroWaterNutrientAndChemistryDownloadModel:
     return HydroWaterNutrientAndChemistryDownloadModel(
         **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        no2=watphy.watnut.no2,
-        no3=watphy.watnut.no3,
-        po4=watphy.watnut.po4,
-        ptot=watphy.watnut.ptot,
-        sio3=watphy.watnut.sio3,
-        ph=watphy.watchem1.ph,
-        chla=watphy.watchl.chla,
+        no2=watphy.watnut.no2 if watphy.watnut else None,
+        no3=watphy.watnut.no3 if watphy.watnut else None,
+        po4=watphy.watnut.po4 if watphy.watnut else None,
+        ptot=watphy.watnut.ptot if watphy.watnut else None,
+        sio3=watphy.watnut.sio3 if watphy.watnut else None,
+        ph=watphy.watchem1.ph if watphy.watchem1 else None,
+        chla=watphy.watchl.chla if watphy.watchl else None,
     )
 
 
@@ -679,12 +679,15 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
     )
 
 
-def get_table_data(fetched_model, fields_to_ignore: list = []) -> dict:
+def get_table_data(fetched_model, fields_to_ignore: list = list) -> dict:
     """
     Builds and returns a dictionary of the fields from an api model and its respective db value.
     :param fetched_model: fetched db model whose values will be used.
     :param fields_to_ignore: fields from the model to be ignored.
     """
+    if not fetched_model:
+        return dict()
+
     table_data_dict = fetched_model.__dict__.copy()
     del table_data_dict['_sa_instance_state']
     for field_to_ignore in fields_to_ignore:
