@@ -255,7 +255,7 @@ class WetStationFactory(SADCOModelFactory):
     class Meta:
         model = WetStation
 
-    station_id = factory.Faker('lexify', text='????', letters='ABCDE-12345')
+    station_id = factory.Faker('lexify', text='???', letters='ABCDE-12345')
     survey_id = factory.SelfAttribute('inventory.survey_id')
     latitude = factory.Faker('latitude')
     longitude = factory.Faker('longitude')

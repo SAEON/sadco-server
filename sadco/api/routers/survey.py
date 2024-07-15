@@ -276,6 +276,9 @@ def get_survey_model(inventory: Inventory) -> SurveyModel:
 
 
 def get_stations(inventory: Inventory) -> list[StationModel]:
+    """
+    Get a model containing the positions of the stations for that specific survey_type.
+    """
     stations = []
     match inventory.survey_type.name.lower():
         case ConstSurveyType.HYDRO.value:

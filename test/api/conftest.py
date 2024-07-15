@@ -175,17 +175,17 @@ def set_current_depth_batch(current_mooring):
 
 
 def set_current_data_batch(current_depth):
-    for _ in range(randint(1, 10)):
+    for _ in range(randint(1, 5)):
         CurrentDataFactory.create(cur_depth=current_depth)
 
 
 def set_weather_period_counts_batch(wet_station):
-    for _ in range(randint(1, 10)):
+    for _ in range(randint(1, 5)):
         WetPeriodCountsFactory.create(wet_station=wet_station)
 
 
 def set_wav_periods_batch(wav_station):
-    for _ in range(randint(1, 10)):
+    for _ in range(randint(1, 5)):
         WavPeriodFactory.create(wav_station=wav_station)
 
 

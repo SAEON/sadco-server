@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from sadco.const import SADCOScope
+from sadco.const import SADCOScope, SurveyType as ConstSurveyType
 from test.api import assert_forbidden
 
 
@@ -44,7 +44,8 @@ def assert_surveys_result(response, inventories):
             else:
                 assert item['chief_scientist'] == (
                         created_inventory.scientist_1.f_name.strip() + ' ' +
-                        created_inventory.scientist_1.surname.strip()).strip()
+                        created_inventory.scientist_1.surname.strip()
+                ).strip()
 
             if check_empty_institute:
                 assert item['institute'] == ''
@@ -220,7 +221,7 @@ def test_search_survey_type(api, inventory, scopes):
 def test_fetch_hydro_survey(api, survey, scopes):
     authorized = SADCOScope.HYDRO_READ in scopes
 
-    route = '/survey/hydro/{}'.format(survey.survey_id)
+    route = f'/survey/{ConstSurveyType.HYDRO.value}/{survey.survey_id}'
 
     r = api(scopes).get(route)
 
@@ -262,7 +263,7 @@ def assert_fetch_hydro_survey_result(response, survey):
 def test_fetch_currents_survey(api, current_mooring, scopes):
     authorized = SADCOScope.CURRENTS_READ in scopes
 
-    route = '/survey/currents/{}'.format(current_mooring.survey_id)
+    route = f'/survey/{ConstSurveyType.CURRENTS.value}/{current_mooring.survey_id}'
 
     r = api(scopes).get(route)
 
@@ -282,7 +283,7 @@ def test_fetch_currents_survey(api, current_mooring, scopes):
 def test_fetch_weather_survey(api, weather_station, scopes):
     authorized = SADCOScope.WEATHER_READ in scopes
 
-    route = '/survey/weather/{}'.format(weather_station.survey_id)
+    route = f'/survey/{ConstSurveyType.WEATHER.value}/{weather_station.survey_id}'
 
     r = api(scopes).get(route)
 
@@ -302,7 +303,7 @@ def test_fetch_weather_survey(api, weather_station, scopes):
 def test_fetch_waves_survey(api, wave_station, scopes):
     authorized = SADCOScope.WAVES_READ in scopes
 
-    route = '/survey/waves/{}'.format(wave_station.survey_id)
+    route = f'/survey/{ConstSurveyType.WAVES.value}/{wave_station.survey_id}'
 
     r = api(scopes).get(route)
 
@@ -322,7 +323,7 @@ def test_fetch_waves_survey(api, wave_station, scopes):
 def test_fetch_utr_survey(api, current_mooring, scopes):
     authorized = SADCOScope.UTR_READ in scopes
 
-    route = '/survey/utr/{}'.format(current_mooring.survey_id)
+    route = f'/survey/{ConstSurveyType.UTR.value}/{current_mooring.survey_id}'
 
     r = api(scopes).get(route)
 
@@ -342,7 +343,7 @@ def test_fetch_utr_survey(api, current_mooring, scopes):
 def test_fetch_echo_sounding_survey(api, echo_sounding_inventory, scopes):
     authorized = SADCOScope.ECHO_SOUNDING_READ in scopes
 
-    route = '/survey/echo-sounding/{}'.format(echo_sounding_inventory.survey_id)
+    route = f'/survey/{ConstSurveyType.ECHOSOUNDING.value}/{echo_sounding_inventory.survey_id}'
 
     r = api(scopes).get(route)
 
@@ -363,7 +364,7 @@ def test_fetch_echo_sounding_survey(api, echo_sounding_inventory, scopes):
 def test_fetch_unknown_survey(api, unknown_inventory, scopes):
     authorized = SADCOScope.UNKNOWN_READ in scopes
 
-    route = '/survey/unknown/{}'.format(unknown_inventory.survey_id)
+    route = f'/survey/{ConstSurveyType.UNKNOWN.value}/{unknown_inventory.survey_id}'
 
     r = api(scopes).get(route)
 
