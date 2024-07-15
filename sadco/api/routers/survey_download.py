@@ -20,14 +20,14 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               WavesDownloadModel)
 
 from sadco.db import Session
-from sadco.const import SADCOScope, DataType
+from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.api.lib.auth import Authorize
 
 router = APIRouter()
 
 
 @router.get(
-    '/utr/{survey_id}',
+    f"/{ConstSurveyType.UTR.value}/{{survey_id}}",
     response_class=StreamingResponse,
     dependencies=[Depends(Authorize(SADCOScope.UTR_DOWNLOAD))]
 )
@@ -41,7 +41,7 @@ async def download_utr_survey_data(
 
 
 @router.get(
-    '/currents/{survey_id}',
+    f"/{ConstSurveyType.CURRENTS.value}/{{survey_id}}",
     response_class=StreamingResponse,
     dependencies=[Depends(Authorize(SADCOScope.CURRENTS_DOWNLOAD))]
 )
@@ -94,7 +94,7 @@ def get_currents_items(survey_id: str) -> list:
 
 
 @router.get(
-    '/weather/{survey_id}',
+    f"/{ConstSurveyType.WEATHER.value}/{{survey_id}}",
     response_class=StreamingResponse,
     dependencies=[Depends(Authorize(SADCOScope.WEATHER_DOWNLOAD))]
 )
@@ -158,7 +158,7 @@ def get_weather_items(survey_id: str) -> list:
 
 
 @router.get(
-    '/waves/{survey_id}',
+    f"/{ConstSurveyType.WAVES.value}/{{survey_id}}",
     response_class=StreamingResponse,
     dependencies=[Depends(Authorize(SADCOScope.WAVES_DOWNLOAD))]
 )
@@ -207,7 +207,7 @@ def get_waves_items(survey_id: str) -> list:
 
 
 @router.get(
-    '/hydro/{survey_id}',
+    f"/{ConstSurveyType.HYDRO.value}/{{survey_id}}",
     response_class=StreamingResponse,
     dependencies=[Depends(Authorize(SADCOScope.HYDRO_DOWNLOAD))]
 )

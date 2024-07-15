@@ -9,8 +9,7 @@ from starlette.status import HTTP_404_NOT_FOUND
 from sadco.api.lib.paging import Page, Paginator
 from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData,
                              Sedphy, Sedpol1, Sedpol2, Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents,
-                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, CurDepth, CurMooring,
-                             WetStation, WavStation)
+                             Weather, Currents, Survey, Station, SamplingDevice, InvStats, CurDepth, CurMooring)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                               WaterNutrientsModel, WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel,
                               DataTypesModel, SedimentModel, SedimentPollutionModel, SedimentChemistryModel,
@@ -226,7 +225,7 @@ def get_chief_scientist(inventory: Inventory) -> str:
 
 
 @router.get(
-    '/hydro/{survey_id}',
+    f"/{ConstSurveyType.HYDRO.value}/{{survey_id}}",
     response_model=HydroSurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.HYDRO_READ))],
 )
@@ -396,7 +395,7 @@ def get_hydro_current_count(survey_id: str) -> int:
 
 
 @router.get(
-    '/utr/{survey_id}',
+    f"/{ConstSurveyType.UTR.value}/{{survey_id}}",
     response_model=CurrentsSurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.UTR_READ))],
 )
@@ -407,7 +406,7 @@ async def get_utr_survey(
 
 
 @router.get(
-    '/currents/{survey_id}',
+    f"/{ConstSurveyType.CURRENTS.value}/{{survey_id}}",
     response_model=CurrentsSurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.CURRENTS_READ))],
 )
@@ -467,7 +466,7 @@ def get_current_depths(cur_mooring_id: int) -> any:
 
 
 @router.get(
-    '/weather/{survey_id}',
+    f"/{ConstSurveyType.WEATHER.value}/{{survey_id}}",
     response_model=PeriodsSurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.WEATHER_READ))],
 )
@@ -493,7 +492,7 @@ async def get_weather_survey(
 
 
 @router.get(
-    '/waves/{survey_id}',
+    f"/{ConstSurveyType.WAVES.value}/{{survey_id}}",
     response_model=PeriodsSurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.WAVES_READ))],
 )
@@ -552,7 +551,7 @@ def get_period_counts_total(period_counts) -> int:
 
 
 @router.get(
-    '/echo-sounding/{survey_id}',
+    f"/{ConstSurveyType.ECHOSOUNDING.value}/{{survey_id}}",
     response_model=SurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.ECHO_SOUNDING_READ))],
 )
@@ -563,7 +562,7 @@ async def get_echo_sounding_survey(
 
 
 @router.get(
-    '/unknown/{survey_id}',
+    f"/{ConstSurveyType.UNKNOWN.value}/{{survey_id}}",
     response_model=SurveyModel,
     dependencies=[Depends(Authorize(SADCOScope.UNKNOWN_READ))],
 )
