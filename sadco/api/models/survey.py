@@ -146,7 +146,7 @@ class SurveyTypeModel(BaseModel):
     count: int
 
 
-class SearchResult(BaseModel):
+class SurveySearchResult(BaseModel):
     items: list[SurveyListItemModel]
     sampling_devices: list[SamplingDeviceModel]
     survey_types: list[SurveyTypeModel]

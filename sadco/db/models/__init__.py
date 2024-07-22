@@ -31,3 +31,5 @@ from .wet_data import WetData
 from .wav_station import WavStation
 from .wav_data import WavData
 from .wav_period import WavPeriod
+from .vos import VosMain, VosMain2, VosMain68, VosArch, VosArch2
+from .country import Country

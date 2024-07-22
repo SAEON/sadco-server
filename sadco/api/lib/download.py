@@ -27,3 +27,20 @@ def get_zipped_csv_response(items, survey_id, data_variant) -> StreamingResponse
     response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}_{data_variant}.zip"
 
     return response
+
+
+def get_table_data(fetched_model, fields_to_ignore: list = []) -> dict:
+    """
+    Builds and returns a dictionary of the fields from an api model and its respective db value.
+    :param fetched_model: fetched db model whose values will be used.
+    :param fields_to_ignore: fields from the model to be ignored.
+    """
+    if not fetched_model:
+        return dict()
+
+    table_data_dict = fetched_model.__dict__.copy()
+    del table_data_dict['_sa_instance_state']
+    for field_to_ignore in fields_to_ignore:
+        del table_data_dict[field_to_ignore]
+
+    return table_data_dict

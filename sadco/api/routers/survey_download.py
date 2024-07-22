@@ -16,7 +16,7 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               WavesDownloadModel)
 
 from sadco.db import Session
-from sadco.api.lib.download import get_zipped_csv_response
+from sadco.api.lib.download import get_zipped_csv_response, get_table_data
 from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.api.lib.auth import Authorize
 
@@ -678,20 +678,4 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
         max_sampling_depth=station.max_spldep,
     )
 
-
-def get_table_data(fetched_model, fields_to_ignore: list = list) -> dict:
-    """
-    Builds and returns a dictionary of the fields from an api model and its respective db value.
-    :param fetched_model: fetched db model whose values will be used.
-    :param fields_to_ignore: fields from the model to be ignored.
-    """
-    if not fetched_model:
-        return dict()
-
-    table_data_dict = fetched_model.__dict__.copy()
-    del table_data_dict['_sa_instance_state']
-    for field_to_ignore in fields_to_ignore:
-        del table_data_dict[field_to_ignore]
-
-    return table_data_dict
 
