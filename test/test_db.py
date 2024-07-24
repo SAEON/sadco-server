@@ -1,12 +1,17 @@
+from decimal import Decimal
+
 from sadco.db.models import (Survey, Inventory, Watphy, Station, Sedphy, Watnut, Watchem1, Watchem2, Watpol1, Watpol2,
                              Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2, InvStats,
                              CurMooring, CurDepth, CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod,
-                             WetPeriodCounts, WetData, WavStation, WavData, WavPeriod)
+                             WetPeriodCounts, WetData, WavStation, WavData, WavPeriod, VosMain, VosMain2, VosMain68,
+                             VosArch, VosArch2)
 from test.factories import InventoryFactory
 from test import TestSession
+from factory.faker import faker
+import factory
 
 
-def test_create_read_all():
+def test_create_read_marine():
     created_inventory = InventoryFactory()
 
     assert_inventory_data(created_inventory)
@@ -221,6 +226,66 @@ def assert_waves_data(created_inventory):
         WavPeriod.station_id == created_wav_period.station_id).first()
 
     assert_model_equality(created_wav_period, fetched_wav_period)
+
+
+def test_create_read_vos():
+    fake = faker.Faker()
+    vos_data = dict(
+        latitude=fake.latitude().quantize(Decimal('0.00001')),
+        longitude=fake.longitude().quantize(Decimal('0.00001')),
+        date_time=fake.date_time(),
+        daynull=fake.lexify(text='?', letters='MTWTFSS'),
+        callsign=fake.lexify(text='????????', letters='12345ABCDE'),
+        country=fake.lexify(text='??', letters='ABCDEFGHIJ'),
+        platform=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        data_id=fake.lexify(text='??', letters='ABCDEFGHIJ'),
+        quality_control=fake.lexify(text='?', letters='YN'),
+        source1=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        load_id=fake.random_number(digits=8),
+        dupflag=fake.lexify(text='?', letters='YN'),
+        atmospheric_pressure=fake.pydecimal(left_digits=4, right_digits=1),
+        surface_temperature=fake.pydecimal(left_digits=2, right_digits=1),
+        surface_temperature_type=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        drybulb=fake.pydecimal(left_digits=2, right_digits=1),
+        wetbulb=fake.pydecimal(left_digits=2, right_digits=1),
+        wetbulb_ice=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        dewpoint=fake.pydecimal(left_digits=2, right_digits=1),
+        cloud_amount=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        cloud1=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        cloud2=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        cloud3=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        cloud4=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        cloud5=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+        visibility_code=fake.lexify(text='??', letters='ABCDEFGHIJ'),
+        weather_code=fake.lexify(text='??', letters='ABCDEFGHIJ'),
+        swell_direction=fake.random_number(digits=8),
+        swell_height=fake.pydecimal(left_digits=2, right_digits=1),
+        swell_period=fake.random_number(digits=8),
+        wave_height=fake.pydecimal(left_digits=2, right_digits=1),
+        wave_period=fake.random_number(digits=8),
+        wind_direction=fake.random_number(digits=8),
+        wind_speed=fake.pydecimal(left_digits=2, right_digits=1),
+        wind_speed_type=fake.lexify(text='?', letters='ABCDEFGHIJ'),
+    )
+
+    TestSession.add(VosMain(**vos_data))
+    TestSession.add(VosMain2(**vos_data))
+    TestSession.add(VosMain68(**vos_data))
+    TestSession.add(VosArch(**vos_data))
+    TestSession.add(VosArch2(**vos_data))
+    TestSession.commit()
+
+    fetched_vos_main = TestSession.query(VosMain).first()
+    fetched_vos_main_2 = TestSession.query(VosMain2).first()
+    fetched_vos_main_68 = TestSession.query(VosMain68).first()
+    fetched_vos_arch = TestSession.query(VosArch).first()
+    fetched_vos_arch_2 = TestSession.query(VosArch2).first()
+
+    assert_model_equality(fetched_vos_main, VosMain(**vos_data))
+    assert_model_equality(fetched_vos_main_2, VosMain2(**vos_data))
+    assert_model_equality(fetched_vos_main_68, VosMain68(**vos_data))
+    assert_model_equality(fetched_vos_arch, VosArch(**vos_data))
+    assert_model_equality(fetched_vos_arch_2, VosArch2(**vos_data))
 
 
 def assert_model_equality(model1, model2):

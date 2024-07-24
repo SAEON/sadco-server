@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get(
     '/vos_surveys/search',
     response_model=VosSurveySearchResult,
-    dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
+    dependencies=[Depends(Authorize(SADCOScope.VOS_READ))],
 )
 async def list_surveys(
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
@@ -54,7 +54,7 @@ async def list_surveys(
 @router.get(
     "/download",
     response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.UTR_DOWNLOAD))]
+    dependencies=[Depends(Authorize(SADCOScope.VOS_DOWNLOAD))]
 )
 async def download_vos_survey_data(
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),

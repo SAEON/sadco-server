@@ -10,7 +10,7 @@ from sadco.db.models import (Inventory, Survey, Planam, Institutes, SurveyType, 
                              SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy,
                              Sedchem1, Sedchem2, Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring,
                              CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData,
-                             WavStation, WavData, WavPeriod)
+                             WavStation, WavData, WavPeriod, VosMain, VosMain2, VosMain68, VosArch, VosArch2)
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -780,3 +780,4 @@ class InventoryFactory(SADCOModelFactory):
     scientist_1 = factory.SubFactory(ScientistsFactory)
     scientist_2 = factory.SubFactory(ScientistsFactory)
     inv_stats = factory.RelatedFactory(InvStatsFactory, factory_related_name='inventory')
+
