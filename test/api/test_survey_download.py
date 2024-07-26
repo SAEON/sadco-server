@@ -4,6 +4,7 @@ import pytest
 import pandas as pd
 import io
 
+from sadco.db.models import VosMain, VosMain2, VosMain68, VosArch, VosArch2
 from test.factories import (SurveyFactory, StationFactory, WatphyFactory, Watchem1Factory, Watchem2Factory,
                             Watpol1Factory, Watpol2Factory, WatnutFactory, InventoryFactory, WatchlFactory,
                             CurrentsFactory, WeatherFactory,
@@ -14,6 +15,7 @@ from test.factories import (SurveyFactory, StationFactory, WatphyFactory, Watche
 
 from sadco.const import SADCOScope
 from test.api import assert_forbidden
+from test import TestSession
 
 TEST_SURVEY_ID: str = '1999/0001'
 
@@ -664,6 +666,63 @@ def set_wav_data(wav_station):
     )
 
 
+@pytest.fixture
+def vos_data():
+    geographical_bounds = dict(
+        north_bound=-30,
+        south_bound=-40,
+        east_bound=-5,
+        west_bound=-15,
+    )
+
+    vos_data = dict(
+        latitude=35,
+        longitude=-10,
+        date_time='01/01/1998',
+        daynull='M',
+        callsign='AD35',
+        country='ZA',
+        platform='D',
+        data_id='CM',
+        quality_control='Y',
+        source1='Q',
+        load_id=9934,
+        dupflag='N',
+        atmospheric_pressure=112.3,
+        surface_temperature=23.4,
+        surface_temperature_type='K',
+        drybulb=1.4,
+        wetbulb=21.2,
+        wetbulb_ice='E',
+        dewpoint=1.4,
+        cloud_amount='H',
+        cloud1='E',
+        cloud2='D',
+        cloud3='C',
+        cloud4='H',
+        cloud5='D',
+        visibility_code='V',
+        weather_code='R',
+        swell_direction=20,
+        swell_height=2.3,
+        swell_period=101,
+        wave_height=1.3,
+        wave_period=206,
+        wind_direction=22,
+        wind_speed=42.6,
+        wind_speed_type='K',
+    )
+
+    TestSession.add(VosMain(**vos_data))
+    TestSession.add(VosMain2(**vos_data))
+    TestSession.add(VosMain68(**vos_data))
+    TestSession.add(VosArch(**vos_data))
+    TestSession.add(VosArch2(**vos_data))
+    TestSession.commit()
+
+    return geographical_bounds
+
+
 @pytest.mark.require_scope(SADCOScope.HYDRO_DOWNLOAD)
 def test_download_all_hydro_data_types(api, hydro_survey_download, scopes, hydro_data_type):
     authorized = SADCOScope.HYDRO_DOWNLOAD in scopes
@@ -759,21 +818,43 @@ def test_download_waves_data(api, waves_survey_download, scopes):
         assert_download_result(r, 'waves')
 
 
-def assert_download_result(response, compare_file_name):
+@pytest.mark.require_scope(SADCOScope.VOS_DOWNLOAD)
+def test_download_vos_data(api, vos_data, scopes):
+    authorized = SADCOScope.VOS_DOWNLOAD in scopes
+
+    route = '/vos_survey/download/'
+
+    r = api(scopes).get(
+        route,
+        params={
+            'north_bound': vos_data['north_bound'],
+            'south_bound': vos_data['south_bound'],
+            'east_bound': vos_data['east_bound'],
+            'west_bound': vos_data['west_bound']
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        assert_download_result(r, 'survey', 'VOS')
+
+
+def assert_download_result(response, compare_file_name, file_unique_name: str = TEST_SURVEY_ID.replace('/', '-')):
     assert response.status_code == 200
 
     current_dir = os.getcwd()
 
     zipped_data = response.content
 
-    downloaded_csv_file_name = 'survey_{}.csv'.format(TEST_SURVEY_ID.replace('/', '-'))
+    downloaded_csv_file_name = 'survey_{}.csv'.format(file_unique_name)
 
     downloaded_csv_data_frame = get_csv_from_zipped_file(zipped_data, downloaded_csv_file_name)
 
     compare_csv_file_path = '{}/api/data-extractions/{}_{}.csv'.format(
         current_dir,
         compare_file_name,
-        TEST_SURVEY_ID.replace('/', '-')
+        file_unique_name
     )
 
     compare_csv_data_frame = pd.read_csv(compare_csv_file_path)
