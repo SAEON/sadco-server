@@ -38,12 +38,12 @@ async def list_surveys(
         start_date,
         end_date,
         exclusive_region,
-        exclusive_interval
+        exclusive_interval,
+        is_count_only=True
     )
 
     total = Session.execute(
-        select(func.count())
-        .select_from(stmt_vos_union.subquery())
+        select(func.sum(stmt_vos_union.c.vos_record_count))
     ).scalar_one()
 
     return VosSurveySearchResult(
@@ -88,7 +88,8 @@ def get_vos_items(statement) -> list:
 
     return [
         VosSurveyDownloadModel(
-            **row._mapping
+            **{key: value for key, value in row._mapping.items() if key != 'latitude'},
+            latitude=-row.latitude
         ).dict()
         for row in results
     ]
@@ -102,17 +103,19 @@ def get_vos_union_statement(
         start_date: date,
         end_date: date,
         exclusive_region: bool,
-        exclusive_interval: bool
+        exclusive_interval: bool,
+        is_count_only: bool = False
 ):
+    """
+    Build a statement that either counts or return the data for all the VOS tables based on the filters
+    @param is_count_only: boolean parameter to control weather to return a statement that just counts the records or
+    returns the actual data
+    """
     vos_models = [VosMain, VosMain2, VosMain68, VosArch, VosArch2]
     vos_statements = []
 
     for vos_model in vos_models:
-        stmt = (
-            select(
-                vos_model
-            )
-        )
+        stmt = get_statement(vos_model, is_count_only=is_count_only)
 
         stmt = get_filtered_statement(
             stmt,
@@ -132,6 +135,18 @@ def get_vos_union_statement(
     return union(*vos_statements)
 
 
+def get_statement(vos_model, is_count_only: bool = False):
+    if is_count_only:
+        return (
+            select(func.count().label('vos_record_count'))
+            .select_from(
+                vos_model
+            )
+        )
+    else:
+        return select(vos_model)
+
+
 def get_filtered_statement(
         stmt,
         vos_model,
@@ -144,6 +159,9 @@ def get_filtered_statement(
         exclusive_region: bool,
         exclusive_interval: bool
 ):
+    """
+    Apply the filters and return the filtered statement
+    """
     if exclusive_region:
         # We need to use the negation of North and South because they come from the DB as south
         if north_bound is not None:

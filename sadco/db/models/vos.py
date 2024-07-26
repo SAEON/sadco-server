@@ -59,3 +59,6 @@ class VosArch(Base, Vos):
 
 class VosArch2(Base, Vos):
     __tablename__ = 'vos_arch2'
+
+
+
