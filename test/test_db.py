@@ -8,7 +8,6 @@ from sadco.db.models import (Survey, Inventory, Watphy, Station, Sedphy, Watnut,
 from test.factories import InventoryFactory
 from test import TestSession
 from factory.faker import faker
-import factory
 
 
 def test_create_read_marine():

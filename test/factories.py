@@ -43,7 +43,7 @@ class InstitutesFactory(SADCOModelFactory):
     class Meta:
         model = Institutes
 
-    code = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 7))}{n}')
+    code = factory.Sequence(lambda n: fake.random_number(digits=6) + n)
     name = factory.LazyFunction(lambda: fake.company())
     address = factory.LazyFunction(lambda: fake.address()[:50])
 
