@@ -234,7 +234,7 @@ class WetPeriodCountsFactory(SADCOModelFactory):
         model = WetPeriodCounts
 
     station_id = factory.SelfAttribute('wet_station.station_id')
-    yearp = factory.Faker('random_number', digits=randint(1, 4))
+    yearp = factory.Sequence(lambda n: fake.random_number(digits=20) + n)
     m01 = factory.Faker('random_number', digits=randint(1, 30))
     m02 = factory.Faker('random_number', digits=randint(1, 30))
     m03 = factory.Faker('random_number', digits=randint(1, 30))
