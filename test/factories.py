@@ -623,7 +623,7 @@ class StationFactory(SADCOModelFactory):
     class Meta:
         model = Station
 
-    station_id = factory.Sequence(lambda n: f'{fake.random_number(digits=randint(1, 11))}')
+    station_id = factory.Sequence(lambda n: f'{fake.random_number(digits=6) + n}')
     latitude = factory.Faker('latitude')
     longitude = factory.Faker('longitude')
     date_start = factory.Faker('date')
@@ -753,10 +753,10 @@ class InventoryFactory(SADCOModelFactory):
     coord_code = factory.Faker('random_number', digits=randint(1, 38))
     date_start = factory.Faker('date_between')
     date_end = factory.Faker('date_time_between_dates', datetime_start=date_start)
-    lat_north = factory.Sequence(lambda n: f'{abs(fake.latitude()) + n}')
-    lat_south = factory.Sequence(lambda n: f'{abs(fake.latitude()) + n}')
-    long_west = factory.Sequence(lambda n: f'{-abs(fake.longitude()) + n}')
-    long_east = factory.Sequence(lambda n: f'{-abs(fake.longitude()) + n}')
+    lat_north = factory.LazyFunction(lambda: randint(0, 90))
+    lat_south = factory.LazyFunction(lambda: randint(0, 90))
+    long_west = factory.LazyFunction(lambda: randint(-180, 0))
+    long_east = factory.LazyFunction(lambda: randint(-180, 0))
     areaname = factory.LazyFunction(lambda: fake.word()[:50])
     domain = factory.Faker('lexify', text='??????????', letters='ABCDEFGHIJKLMNOP')
     track_chart = factory.LazyFunction(lambda: choice(('Y', 'N')))
