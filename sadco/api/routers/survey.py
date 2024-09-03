@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.DEBUG)
 @router.get(
     '/surveys',
     response_model=Page[SurveyListItemModel],
-    dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
+    # dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
 )
 async def list_surveys(
         paginator: Paginator = Depends(),
