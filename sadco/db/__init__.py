@@ -1,7 +1,12 @@
 from sqlalchemy import create_engine
+import logging
 from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
 
 from sadco.config import sadco_config
+
+logging.basicConfig(level=logging.DEBUG)
+
+logging.debug("Debug message: About to connect ...")
 
 engine = create_engine(
     sadco_config.SADCO.DB.URL,
@@ -19,6 +24,7 @@ Session = scoped_session(
     )
 )
 
+logging.debug("Debug message: connected ...")
 
 class _Base:
     __table_args__ = {"schema": "sadco"}
