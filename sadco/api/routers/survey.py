@@ -1,7 +1,6 @@
 from datetime import date
 from math import ceil
 
-import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import joinedload
@@ -23,12 +22,11 @@ from sadco.const import SADCOScope, SurveyType as ConstSurveyType
 
 router = APIRouter()
 
-logging.basicConfig(level=logging.DEBUG)
 
 @router.get(
     '/surveys',
     response_model=Page[SurveyListItemModel],
-    # dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
+    dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
 )
 async def list_surveys(
         paginator: Paginator = Depends(),
@@ -45,8 +43,6 @@ async def list_surveys(
             joinedload(Inventory.survey_type)
         )
     )
-
-    logging.debug("Debug message: Fetching Surveys ...")
 
     return paginator.paginate(
         stmt,
