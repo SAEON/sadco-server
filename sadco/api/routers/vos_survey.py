@@ -5,10 +5,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func, union
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.api.lib.download import get_zipped_csv_response
+from sadco.api.lib.download import get_csv_data, audit_download_request
 from sadco.db.models import VosMain, VosArch, VosArch2, VosMain2, VosMain68
 from sadco.api.models import VosSurveySearchResult, VosSurveyDownloadModel
-from sadco.api.lib.auth import Authorize
+from sadco.api.lib.auth import Authorize, Authorized
 from sadco.db import Session
 from sadco.const import SADCOScope
 
@@ -53,8 +53,7 @@ async def list_surveys(
 
 @router.get(
     "/download",
-    response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.VOS_DOWNLOAD))]
+    response_class=StreamingResponse
 )
 async def download_vos_survey_data(
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
@@ -65,6 +64,7 @@ async def download_vos_survey_data(
         end_date: date = Query(None, title='Date range end'),
         exclusive_region: bool = Query(False, title='Exclude partial spatial matches'),
         exclusive_interval: bool = Query(False, title='Exclude partial temporal matches'),
+        auth: Authorized = Depends(Authorize(SADCOScope.VOS_DOWNLOAD))
 ):
     stmt_vos_union = get_vos_union_statement(
         north_bound,
@@ -79,7 +79,22 @@ async def download_vos_survey_data(
 
     items = get_vos_items(stmt_vos_union)
 
-    return get_zipped_csv_response(items, 'VOS', 'VOS')
+    zipped_csv_data: dict = get_csv_data(items, 'VOS', 'VOS')
+
+    audit_download_request(
+        auth,
+        zipped_csv_data.get('file_info'),
+        north_bound=north_bound,
+        south_bound=south_bound,
+        east_bound=east_bound,
+        west_bound=west_bound,
+        start_date=start_date,
+        end_date=end_date,
+        exclusive_region=exclusive_region,
+        exclusive_interval=exclusive_interval
+    )
+
+    return zipped_csv_data.get('zipped_response')
 
 
 def get_vos_items(statement) -> list:

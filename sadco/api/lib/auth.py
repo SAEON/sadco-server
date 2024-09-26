@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from fastapi import HTTPException
+from typing import Optional
 from fastapi.openapi.models import OAuth2, OAuthFlowClientCredentials, OAuthFlows
 from fastapi.security.base import SecurityBase
 from fastapi.security.utils import get_authorization_scheme_param
@@ -22,6 +23,8 @@ class Authorized:
     and (if a user-initiated API call) the specified user. If such
     permission is denied, an HTTP 403 error is raised instead.
     """
+    client_id: str
+    user_id: Optional[str]
 
 
 def _authorize_request(request: Request, required_scope: SADCOScope):
@@ -39,6 +42,11 @@ def _authorize_request(request: Request, required_scope: SADCOScope):
 
     if not token.active:
         raise HTTPException(HTTP_403_FORBIDDEN)
+
+    return Authorized(
+        client_id=token.client_id,
+        user_id=None if token.sub == token.client_id else token.sub
+    )
 
 
 class BaseAuthorize(SecurityBase):

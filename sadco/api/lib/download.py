@@ -1,10 +1,15 @@
 from fastapi.responses import StreamingResponse
+from fastapi import Request
+from datetime import datetime, timezone
 from io import StringIO, BytesIO
+from sadco.api.lib.auth import Authorized
+from sadco.db.models import DownloadAudit
 import pandas as pd
+import hashlib
 import zipfile
 
 
-def get_zipped_csv_response(items, survey_id, data_variant) -> StreamingResponse:
+def get_csv_data(items, survey_id, data_variant) -> dict:
     """
     Converts a list of dictionary items to a streaming response of a zipped folder containing a csv file
     :param items: A list of dictionaries that contain the information for each row of the csv
@@ -19,6 +24,8 @@ def get_zipped_csv_response(items, survey_id, data_variant) -> StreamingResponse
 
     zip_buffer = BytesIO()
 
+    file_info = get_file_stream_info(stream)
+
     with zipfile.ZipFile(zip_buffer, mode="w") as zip_archive:
         stream.seek(0)
         zip_archive.writestr(f"survey_{survey_id}.csv", stream.read())
@@ -26,7 +33,18 @@ def get_zipped_csv_response(items, survey_id, data_variant) -> StreamingResponse
     response = StreamingResponse(iter([zip_buffer.getvalue()]), media_type="application/zip")
     response.headers["Content-Disposition"] = f"attachment; filename=survey_{survey_id}_{data_variant}.zip"
 
-    return response
+    return {
+        'zipped_response': response,
+        'file_info': file_info
+    }
+
+
+def get_file_stream_info(stream: StringIO) -> dict:
+    stream_value = stream.getvalue()
+    return {
+        'checksum': hashlib.md5(stream_value.encode()).hexdigest(),
+        'size': len(stream_value),
+    }
 
 
 def get_table_data(fetched_model, fields_to_ignore: list = []) -> dict:
@@ -44,3 +62,14 @@ def get_table_data(fetched_model, fields_to_ignore: list = []) -> dict:
         del table_data_dict[field_to_ignore]
 
     return table_data_dict
+
+
+def audit_download_request(auth: Authorized, file_info: dict, **request_params):
+    DownloadAudit(
+        timestamp=datetime.now(timezone.utc),
+        client_id=auth.client_id,
+        user_id=auth.user_id,
+        parameters=request_params.__str__(),
+        download_file_size=file_info.get('size'),
+        download_file_checksum=file_info.get('checksum')
+    ).save()

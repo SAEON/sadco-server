@@ -16,39 +16,47 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               WavesDownloadModel)
 
 from sadco.db import Session
-from sadco.api.lib.download import get_zipped_csv_response, get_table_data
+from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
 from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
-from sadco.api.lib.auth import Authorize
+from sadco.api.lib.auth import Authorize, Authorized
 
 router = APIRouter()
 
 
 @router.get(
     f"/{ConstSurveyType.UTR.value}/{{survey_id}}",
-    response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.UTR_DOWNLOAD))]
+    response_class=StreamingResponse
 )
 async def download_utr_survey_data(
         survey_id: str,
-        data_type: str = Query(None, title='Data Type')
+        data_type: str = Query(None, title='Data Type'),
+        auth: Authorized = Depends(Authorize(SADCOScope.UTR_DOWNLOAD))
 ):
     items = get_currents_items(survey_id)
 
-    return get_zipped_csv_response(items, survey_id, data_type)
+    zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
+
+    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+
+    return zipped_csv_data.get('zipped_response')
 
 
 @router.get(
     f"/{ConstSurveyType.CURRENTS.value}/{{survey_id}}",
-    response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.CURRENTS_DOWNLOAD))]
+    response_class=StreamingResponse
 )
 async def download_currents_survey_data(
         survey_id: str,
-        data_type: str = Query(None, title='Data Type')
+        data_type: str = Query(None, title='Data Type'),
+        auth: Authorized = Depends(Authorize(SADCOScope.CURRENTS_DOWNLOAD))
 ):
     items = get_currents_items(survey_id)
 
-    return get_zipped_csv_response(items, survey_id, data_type)
+    zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
+
+    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+
+    return zipped_csv_data.get('zipped_response')
 
 
 def get_currents_items(survey_id: str) -> list:
@@ -92,16 +100,20 @@ def get_currents_items(survey_id: str) -> list:
 
 @router.get(
     f"/{ConstSurveyType.WEATHER.value}/{{survey_id}}",
-    response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.WEATHER_DOWNLOAD))]
+    response_class=StreamingResponse
 )
 async def download_currents_survey_data(
         survey_id: str,
-        data_type: str = Query(None, title='Data Type')
+        data_type: str = Query(None, title='Data Type'),
+        auth: Authorized = Depends(Authorize(SADCOScope.WEATHER_DOWNLOAD))
 ):
     items = get_weather_items(survey_id)
 
-    return get_zipped_csv_response(items, survey_id, data_type)
+    zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
+
+    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+
+    return zipped_csv_data.get('zipped_response')
 
 
 def get_weather_items(survey_id: str) -> list:
@@ -156,16 +168,20 @@ def get_weather_items(survey_id: str) -> list:
 
 @router.get(
     f"/{ConstSurveyType.WAVES.value}/{{survey_id}}",
-    response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.WAVES_DOWNLOAD))]
+    response_class=StreamingResponse
 )
 async def download_currents_survey_data(
         survey_id: str,
-        data_type: str = Query(None, title='Data Type')
+        data_type: str = Query(None, title='Data Type'),
+        auth: Authorized = Depends(Authorize(SADCOScope.WAVES_DOWNLOAD))
 ):
     items = get_waves_items(survey_id)
 
-    return get_zipped_csv_response(items, survey_id, data_type)
+    zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
+
+    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+
+    return zipped_csv_data.get('zipped_response')
 
 
 def get_waves_items(survey_id: str) -> list:
@@ -205,16 +221,20 @@ def get_waves_items(survey_id: str) -> list:
 
 @router.get(
     f"/{ConstSurveyType.HYDRO.value}/{{survey_id}}",
-    response_class=StreamingResponse,
-    dependencies=[Depends(Authorize(SADCOScope.HYDRO_DOWNLOAD))]
+    response_class=StreamingResponse
 )
 async def download_hydro_survey_data(
         survey_id: str,
-        data_type: str = Query(None, title='Data Type')
+        data_type: str = Query(None, title='Data Type'),
+        auth: Authorized = Depends(Authorize(SADCOScope.HYDRO_DOWNLOAD))
 ):
     items = get_hydro_data_type_items(data_type, survey_id)
 
-    return get_zipped_csv_response(items, survey_id, data_type)
+    zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
+
+    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+
+    return zipped_csv_data.get('zipped_response')
 
 
 def get_hydro_data_type_items(data_type: str, survey_id: str) -> list:
@@ -677,5 +697,3 @@ def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadM
         platform_name=survey.planam,
         max_sampling_depth=station.max_spldep,
     )
-
-
