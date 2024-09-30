@@ -4,8 +4,8 @@ from sadco.db.models import (Survey, Inventory, Watphy, Station, Sedphy, Watnut,
                              Watchl, Watcurrents, SamplingDevice, Sedpol1, Sedpol2, Sedchem1, Sedchem2, InvStats,
                              CurMooring, CurDepth, CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod,
                              WetPeriodCounts, WetData, WavStation, WavData, WavPeriod, VosMain, VosMain2, VosMain68,
-                             VosArch, VosArch2)
-from test.factories import InventoryFactory
+                             VosArch, VosArch2, DownloadAudit)
+from test.factories import InventoryFactory, DownloadAuditFactory
 from test import TestSession
 from factory.faker import faker
 
@@ -287,8 +287,20 @@ def test_create_read_vos():
     assert_model_equality(fetched_vos_arch_2, VosArch2(**vos_data))
 
 
+def test_create_read_download_audit():
+    created_download_audit = DownloadAuditFactory()
+
+    fetched_download_audit = TestSession.query(DownloadAudit).filter(
+        DownloadAudit.timestamp == created_download_audit.timestamp,
+        DownloadAudit.client_id == created_download_audit.client_id
+    ).first()
+
+    assert_model_equality(created_download_audit, fetched_download_audit)
+
+
 def assert_model_equality(model1, model2):
     """Compares all attributes of two SQLAlchemy models for equality."""
 
     for attr in model1.__table__.columns:
         assert getattr(model1, attr.name) == getattr(model2, attr.name)
+

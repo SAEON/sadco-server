@@ -10,7 +10,8 @@ from sadco.db.models import (Inventory, Survey, Planam, Institutes, SurveyType, 
                              SamplingDevice, Watnut, Watchem2, Watchem1, Watpol1, Watpol2, Watchl, Watcurrents, Sedphy,
                              Sedchem1, Sedchem2, Sedpol1, Sedpol2, InvStats, Weather, Currents, CurDepth, CurMooring,
                              CurData, CurWatphy, EDMInstrument2, WetStation, WetPeriod, WetPeriodCounts, WetData,
-                             WavStation, WavData, WavPeriod, VosMain, VosMain2, VosMain68, VosArch, VosArch2)
+                             WavStation, WavData, WavPeriod, VosMain, VosMain2, VosMain68, VosArch, VosArch2,
+                             DownloadAudit)
 
 FactorySession = scoped_session(sessionmaker(
     bind=sadco.db.engine,
@@ -781,3 +782,15 @@ class InventoryFactory(SADCOModelFactory):
     scientist_2 = factory.SubFactory(ScientistsFactory)
     inv_stats = factory.RelatedFactory(InvStatsFactory, factory_related_name='inventory')
 
+
+class DownloadAuditFactory(SADCOModelFactory):
+    class Meta:
+        model = DownloadAudit
+
+    timestamp = factory.Faker('date')
+    client_id = factory.Faker('uuid4')
+    user_id = factory.Faker('uuid4')
+    survey_type = factory.LazyFunction(lambda: choice(('vos', 'hydro', 'water', 'currents')))
+    parameters = fake.json(data_columns={'survey_id': 'pyint', 'data_type': 'pyint'}, num_rows=2)
+    download_file_size = factory.Faker('random_number', digits=randint(1, 10))
+    download_file_checksum = factory.Faker('md5', raw_output=False)
