@@ -36,7 +36,8 @@ async def download_utr_survey_data(
 
     zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
 
-    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+    audit_download_request(auth, zipped_csv_data.get('file_info'), ConstSurveyType.UTR.value, survey_id=survey_id,
+                           data_type=data_type)
 
     return zipped_csv_data.get('zipped_response')
 
@@ -54,7 +55,8 @@ async def download_currents_survey_data(
 
     zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
 
-    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+    audit_download_request(auth, zipped_csv_data.get('file_info'), ConstSurveyType.CURRENTS.value, survey_id=survey_id,
+                           data_type=data_type)
 
     return zipped_csv_data.get('zipped_response')
 
@@ -111,7 +113,8 @@ async def download_currents_survey_data(
 
     zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
 
-    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+    audit_download_request(auth, zipped_csv_data.get('file_info'), ConstSurveyType.WEATHER.value, survey_id=survey_id,
+                           data_type=data_type)
 
     return zipped_csv_data.get('zipped_response')
 
@@ -179,7 +182,8 @@ async def download_currents_survey_data(
 
     zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
 
-    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+    audit_download_request(auth, zipped_csv_data.get('file_info'), ConstSurveyType.WAVES.value, survey_id=survey_id,
+                           data_type=data_type)
 
     return zipped_csv_data.get('zipped_response')
 
@@ -232,7 +236,9 @@ async def download_hydro_survey_data(
 
     zipped_csv_data: dict = get_csv_data(items, survey_id, data_type)
 
-    audit_download_request(auth, zipped_csv_data.get('file_info'), survey_id=survey_id, data_type=data_type)
+    audit_download_request(auth, zipped_csv_data.get('file_info'),
+                           ConstSurveyType.HYDRO.value,
+                           survey_id=survey_id, data_type=data_type)
 
     return zipped_csv_data.get('zipped_response')
 

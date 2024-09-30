@@ -10,7 +10,7 @@ from sadco.db.models import VosMain, VosArch, VosArch2, VosMain2, VosMain68
 from sadco.api.models import VosSurveySearchResult, VosSurveyDownloadModel
 from sadco.api.lib.auth import Authorize, Authorized
 from sadco.db import Session
-from sadco.const import SADCOScope
+from sadco.const import SADCOScope, SurveyType
 
 router = APIRouter()
 
@@ -84,6 +84,7 @@ async def download_vos_survey_data(
     audit_download_request(
         auth,
         zipped_csv_data.get('file_info'),
+        SurveyType.VOS.value,
         north_bound=north_bound,
         south_bound=south_bound,
         east_bound=east_bound,

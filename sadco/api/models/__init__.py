@@ -12,3 +12,5 @@ from .survey_download import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
                               HydroCurrentsDownloadModel, WeatherDownloadModel, WavesDownloadModel)
 
 from .vos_survey import (VosSurveySearchResult, VosSurveyDownloadModel)
+
+from .download_audit import DownloadAuditModel

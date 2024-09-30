@@ -64,11 +64,12 @@ def get_table_data(fetched_model, fields_to_ignore: list = []) -> dict:
     return table_data_dict
 
 
-def audit_download_request(auth: Authorized, file_info: dict, **request_params):
+def audit_download_request(auth: Authorized, file_info: dict, survey_type: str, **request_params):
     DownloadAudit(
         timestamp=datetime.now(timezone.utc),
         client_id=auth.client_id,
         user_id=auth.user_id,
+        survey_type=survey_type,
         parameters=request_params.__str__(),
         download_file_size=file_info.get('size'),
         download_file_checksum=file_info.get('checksum')

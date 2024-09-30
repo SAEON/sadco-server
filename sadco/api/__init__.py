@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from sadco.api.routers import survey, survey_download, vos_survey
+from sadco.api.routers import survey, survey_download, vos_survey, download_audit
 from sadco.db import Session
 from odp.version import VERSION
 
@@ -17,6 +17,8 @@ app.include_router(survey.router, prefix='/survey', tags=['Survey'])
 app.include_router(survey_download.router, prefix='/survey/download', tags=['Survey', 'Download'])
 
 app.include_router(vos_survey.router, prefix='/vos_survey', tags=['Survey'])
+
+app.include_router(download_audit.router, prefix='/downloads', tags=['Downloads', 'Audit'])
 
 app.add_middleware(
     CORSMiddleware,
