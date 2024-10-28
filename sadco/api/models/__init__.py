@@ -2,7 +2,7 @@ from .survey import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                      WaterChemistryModel, WaterPollutionModel, WaterNutrientsModel, DataTypesModel,
                      SedimentChemistryModel, HydroSurveyModel, SamplingDeviceModel, SurveyTypeModel,
                      SedimentPollutionModel, SedimentModel, CurrentsModel, WeatherModel, SurveySearchResult,
-                     CurrentDepthModel, CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel)
+                     CurrentDepthModel, CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel, InstitutesModel)
 
 from .survey_download import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,

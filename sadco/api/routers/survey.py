@@ -9,12 +9,13 @@ from starlette.status import HTTP_404_NOT_FOUND
 from sadco.api.lib.paging import Page, Paginator
 from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData, Sedphy, Sedpol1, Sedpol2,
                              Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents, Weather, Currents, Survey, Station,
-                             SamplingDevice, InvStats, CurDepth, CurMooring)
+                             SamplingDevice, InvStats, CurDepth, CurMooring, Institutes)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel, WaterNutrientsModel,
                               WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel, DataTypesModel,
                               SedimentModel, SedimentPollutionModel, SedimentChemistryModel, SurveyTypeModel,
                               CurrentsModel, WeatherModel, SurveySearchResult, SamplingDeviceModel, HydroSurveyModel,
-                              CurrentDepthModel, CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel)
+                              CurrentDepthModel, CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel,
+                              InstitutesModel)
 
 from sadco.api.lib.auth import Authorize
 from sadco.db import Session
@@ -70,6 +71,7 @@ async def list_surveys(
         survey_id: str = Query(None, title='Survey ID'),
         sampling_device_code: int = Query(None, title='Sampling device'),
         survey_type_code: str = Query(None, title='Survey type'),
+        institute_code: str = Query(None, title='Institute'),
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
         south_bound: float = Query(None, title='South bound latitude', ge=-90, le=90),
         east_bound: float = Query(None, title='East bound longitude', ge=-180, le=180),
@@ -180,6 +182,28 @@ async def list_surveys(
         for row in Session.execute(survey_type_query)
     ]
 
+    institutes_query = (
+        select(func.count(Inventory.survey_id.distinct()).label('institute_count'), Institutes.code, Institutes.name)
+        .join(Institutes)
+        .group_by(Institutes.code)
+        .group_by(Institutes.name)
+        .order_by(Institutes.name)
+    )
+
+    if institute_code is not None:
+        institutes_query = institutes_query.where(Institutes.code == institute_code)
+
+        stmt = stmt.where(Inventory.instit_code == institute_code)
+
+    institutes = [
+        InstitutesModel(
+            code=row.code,
+            name=row.name,
+            count=row.institute_count
+        )
+        for row in Session.execute(institutes_query)
+    ]
+
     total = Session.execute(
         select(func.count())
         .select_from(stmt.distinct().subquery())
@@ -210,6 +234,7 @@ async def list_surveys(
         items=items,
         sampling_devices=sampling_devices,
         survey_types=survey_types,
+        institutes=institutes,
         total=total,
         page=page,
         pages=ceil(total / limit) if limit else 0,

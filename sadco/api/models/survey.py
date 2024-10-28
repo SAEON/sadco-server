@@ -146,10 +146,17 @@ class SurveyTypeModel(BaseModel):
     count: int
 
 
+class InstitutesModel(BaseModel):
+    code: int
+    name: str
+    count: int
+
+
 class SurveySearchResult(BaseModel):
     items: list[SurveyListItemModel]
     sampling_devices: list[SamplingDeviceModel]
     survey_types: list[SurveyTypeModel]
+    institutes: list[InstitutesModel]
     total: int
     page: int
     pages: int
