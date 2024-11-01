@@ -217,6 +217,37 @@ def test_search_survey_type(api, inventory, scopes):
             assert fetched_survey_type['code'] == survey_type.code
 
 
+@pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
+def test_search_institute(api, inventory, scopes):
+    authorized = SADCOScope.SURVEYS_READ in scopes
+
+    institute = inventory.institute
+
+    route = '/survey/surveys/search'
+
+    r = api(scopes).get(
+        route,
+        params={
+            'institute_code': institute.code
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        assert len(json['items']) > 0
+
+        for item in json['items']:
+            assert item['institute'] == institute.name
+
+        for fetched_institute in json['institutes']:
+            assert fetched_institute['code'] == institute.code
+
+
 @pytest.mark.require_scope(SADCOScope.HYDRO_READ)
 def test_fetch_hydro_survey(api, survey, scopes):
     authorized = SADCOScope.HYDRO_READ in scopes
