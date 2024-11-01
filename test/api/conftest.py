@@ -8,7 +8,8 @@ from test.factories import (Watchem1Factory, Watchem2Factory, Watpol1Factory, Wa
                             SedphyFactory, Sedchem2Factory, Sedchem1Factory, Sedpol2Factory, Sedpol1Factory,
                             PlanamFactory, InstitutesFactory, WeatherFactory, CurrentsFactory, CurrentMooringFactory,
                             CurrentDepthFactory, CurrentDataFactory, WetStationFactory, WetPeriodFactory,
-                            WavStationFactory, WavPeriodFactory, WetPeriodCountsFactory, SurveyTypeFactory)
+                            WavStationFactory, WavPeriodFactory, WetPeriodCountsFactory, SurveyTypeFactory,
+                            VosMainFactory)
 from test.api import all_scopes_excluding
 
 from sadco.const import SADCOScope, DataType
@@ -88,6 +89,11 @@ def inventories(planam, institute):
 @pytest.fixture
 def inventory():
     return InventoryFactory.create(survey=None, cur_moorings=None, wet_stations=None, wav_stations=None)
+
+
+@pytest.fixture
+def vos_main():
+    return VosMainFactory()
 
 
 @pytest.fixture

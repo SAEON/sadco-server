@@ -410,3 +410,30 @@ def test_fetch_unknown_survey(api, unknown_inventory, scopes):
         assert json['date_start'] == unknown_inventory.date_start.strftime('%Y-%m-%d')
         assert json['date_end'] == unknown_inventory.date_end.strftime('%Y-%m-%d')
         assert json['survey_type'] == unknown_inventory.survey_type.name
+
+
+@pytest.mark.require_scope(SADCOScope.VOS_READ)
+def test_search_vos(api, vos_main, scopes):
+    authorized = SADCOScope.VOS_READ in scopes
+
+    route = '/vos_survey/vos_surveys/search'
+
+    r = api(scopes).get(
+        route,
+        params={
+            'north_bound': (-vos_main.latitude) + 1,
+            'south_bound': (-vos_main.latitude) - 1,
+            'west_bound': vos_main.longitude - 1,
+            'east_bound': vos_main.longitude + 1,
+        }
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        json = r.json()
+
+        assert r.status_code == 200
+
+        assert json['total'] > 0
+

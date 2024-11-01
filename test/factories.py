@@ -794,3 +794,47 @@ class DownloadAuditFactory(SADCOModelFactory):
     parameters = fake.json(data_columns={'survey_id': 'pyint', 'data_type': 'pyint'}, num_rows=2)
     download_file_size = factory.Faker('random_number', digits=randint(1, 10))
     download_file_checksum = factory.Faker('md5', raw_output=False)
+
+
+class VosMainFactory(SADCOModelFactory):
+    class Meta:
+        model = VosMain
+
+    latitude = factory.LazyFunction(lambda: randint(0, 90))
+    longitude = factory.LazyFunction(lambda: randint(-180, 0))
+    date_time = factory.Faker('date_time_between', start_date='-5y', end_date='now')
+    daynull = factory.Faker('random_element', elements=('Y', 'N', None))
+    callsign = factory.Faker('lexify', text='??????????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    country = factory.Faker('country_code')
+    platform = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    data_id = factory.Faker('lexify', text='??')
+    quality_control = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    source1 = factory.Faker('random_element', elements=('X', 'Y', 'Z'))
+    load_id = factory.Faker('random_int', min=1, max=1000)
+    dupflag = factory.Faker('random_element', elements=('Y', 'N'))
+    atmospheric_pressure = factory.LazyFunction(
+        lambda: round(fake.pyfloat(left_digits=3, right_digits=1, positive=True), 1))
+    surface_temperature = factory.LazyFunction(
+        lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    surface_temperature_type = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    drybulb = factory.LazyFunction(lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    wetbulb = factory.LazyFunction(lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    wetbulb_ice = factory.Faker('random_element', elements=('Y', 'N'))
+    dewpoint = factory.LazyFunction(lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    cloud_amount = factory.Faker('random_element', elements=('1', '2', '3', '4'))
+    cloud1 = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    cloud2 = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    cloud3 = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    cloud4 = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    cloud5 = factory.Faker('random_element', elements=('A', 'B', 'C'))
+    visibility_code = factory.Faker('lexify', text='??')
+    weather_code = factory.Faker('lexify', text='??')
+    swell_direction = factory.Faker('random_int', min=0, max=360)
+    swell_height = factory.LazyFunction(lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    swell_period = factory.Faker('random_int', min=1, max=20)
+    wave_height = factory.LazyFunction(lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    wave_period = factory.Faker('random_int', min=1, max=20)
+    wind_direction = factory.Faker('random_int', min=0, max=360)
+    wind_speed = factory.LazyFunction(lambda: round(fake.pyfloat(left_digits=2, right_digits=1, positive=True), 1))
+    wind_speed_type = factory.Faker('random_element', elements=('M', 'K'))
+
