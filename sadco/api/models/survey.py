@@ -134,29 +134,21 @@ class PeriodsSurveyModel(SurveyModel):
     period_counts: list[PeriodCountsModel]
 
 
-class SamplingDeviceModel(BaseModel):
-    code: int
+class SearchFacetItemsModel(BaseModel):
     name: str
+    code: str
     count: int
 
 
-class SurveyTypeModel(BaseModel):
-    code: int
-    name: str
-    count: int
-
-
-class InstitutesModel(BaseModel):
-    code: int
-    name: str
-    count: int
+class SearchFacetModel(BaseModel):
+    title: str
+    query_key: str
+    items: list[SearchFacetItemsModel]
 
 
 class SurveySearchResult(BaseModel):
     items: list[SurveyListItemModel]
-    sampling_devices: list[SamplingDeviceModel]
-    survey_types: list[SurveyTypeModel]
-    institutes: list[InstitutesModel]
+    search_facets: list[SearchFacetModel]
     total: int
     page: int
     pages: int

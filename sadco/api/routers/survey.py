@@ -12,10 +12,10 @@ from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Wat
                              SamplingDevice, InvStats, CurDepth, CurMooring, Institutes)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel, WaterNutrientsModel,
                               WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel, DataTypesModel,
-                              SedimentModel, SedimentPollutionModel, SedimentChemistryModel, SurveyTypeModel,
-                              CurrentsModel, WeatherModel, SurveySearchResult, SamplingDeviceModel, HydroSurveyModel,
-                              CurrentDepthModel, CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel,
-                              InstitutesModel)
+                              SedimentModel, SedimentPollutionModel, SedimentChemistryModel, CurrentsModel,
+                              WeatherModel, SurveySearchResult, HydroSurveyModel, CurrentDepthModel,
+                              CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel, SearchFacetModel,
+                              SearchFacetItemsModel)
 
 from sadco.api.lib.auth import Authorize
 from sadco.db import Session
@@ -149,17 +149,20 @@ async def list_surveys(
 
     if sampling_device_code is not None:
         sampling_device_query = sampling_device_query.where(SamplingDevice.code == sampling_device_code)
-
         stmt = stmt.join(Survey).join(Station).join(Sedphy).where(Sedphy.device_code == sampling_device_code)
 
-    sampling_devices = [
-        SamplingDeviceModel(
-            code=row.code,
-            name=row.name,
-            count=row.device_count
-        )
-        for row in Session.execute(sampling_device_query)
-    ]
+    sampling_devices_search_facet = SearchFacetModel(
+        title='Sampling Devices',
+        query_key='sampling_device_code',
+        items=[
+            SearchFacetItemsModel(
+                code=row.code,
+                name=row.name,
+                count=row.device_count
+            )
+            for row in Session.execute(sampling_device_query)
+        ]
+    )
 
     survey_type_query = (
         select(func.count(Inventory.survey_id.distinct()).label('survey_type_count'), SurveyType.code, SurveyType.name)
@@ -170,17 +173,20 @@ async def list_surveys(
 
     if survey_type_code is not None:
         survey_type_query = survey_type_query.where(SurveyType.code == survey_type_code)
-
         stmt = stmt.where(Inventory.survey_type_code == survey_type_code)
 
-    survey_types = [
-        SurveyTypeModel(
-            code=row.code,
-            name=row.name,
-            count=row.survey_type_count
-        )
-        for row in Session.execute(survey_type_query)
-    ]
+    survey_types_search_facet = SearchFacetModel(
+        title='Survey Types',
+        query_key='survey_type_code',
+        items=[
+            SearchFacetItemsModel(
+                code=row.code,
+                name=row.name,
+                count=row.survey_type_count
+            )
+            for row in Session.execute(survey_type_query)
+        ]
+    )
 
     institutes_query = (
         select(func.count(Inventory.survey_id.distinct()).label('institute_count'), Institutes.code, Institutes.name)
@@ -192,17 +198,20 @@ async def list_surveys(
 
     if institute_code is not None:
         institutes_query = institutes_query.where(Institutes.code == institute_code)
-
         stmt = stmt.where(Inventory.instit_code == institute_code)
 
-    institutes = [
-        InstitutesModel(
-            code=row.code,
-            name=row.name,
-            count=row.institute_count
-        )
-        for row in Session.execute(institutes_query)
-    ]
+    institutes_search_facet = SearchFacetModel(
+        title='Institutes',
+        query_key='institute_code',
+        items=[
+            SearchFacetItemsModel(
+                code=row.code,
+                name=row.name,
+                count=row.institute_count
+            )
+            for row in Session.execute(institutes_query)
+        ]
+    )
 
     total = Session.execute(
         select(func.count())
@@ -232,9 +241,11 @@ async def list_surveys(
 
     return SurveySearchResult(
         items=items,
-        sampling_devices=sampling_devices,
-        survey_types=survey_types,
-        institutes=institutes,
+        search_facets=[
+            sampling_devices_search_facet,
+            survey_types_search_facet,
+            institutes_search_facet
+        ],
         total=total,
         page=page,
         pages=ceil(total / limit) if limit else 0,
