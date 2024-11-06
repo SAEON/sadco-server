@@ -242,9 +242,9 @@ async def list_surveys(
     return SurveySearchResult(
         items=items,
         search_facets=[
-            sampling_devices_search_facet,
             survey_types_search_facet,
-            institutes_search_facet
+            institutes_search_facet,
+            sampling_devices_search_facet
         ],
         total=total,
         page=page,
@@ -317,7 +317,7 @@ def get_stations(inventory: Inventory) -> list[StationModel]:
     stations = []
     match inventory.survey_type.name.lower():
         case ConstSurveyType.HYDRO.value:
-            stations = inventory.survey.stations
+            stations = inventory.survey.stations if inventory.survey else []
         case ConstSurveyType.CURRENTS.value | ConstSurveyType.UTR.value:
             stations = inventory.cur_moorings
         case ConstSurveyType.WEATHER.value:
@@ -346,6 +346,9 @@ def get_data_types(inventory_statistics: InvStats) -> DataTypesModel:
     If the data type is split into 2, the max is used.
     """
     data_types_model = DataTypesModel()
+
+    if inventory_statistics is None:
+        return data_types_model
 
     if inventory_statistics.watphy_cnt and inventory_statistics.watphy_cnt > 0:
         water_model = WaterModel(
