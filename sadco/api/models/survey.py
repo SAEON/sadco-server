@@ -152,3 +152,9 @@ class SurveySearchResult(BaseModel):
     total: int
     page: int
     pages: int
+
+
+class SurveyTypeModel(BaseModel):
+    code: int
+    name: str
+    description: str

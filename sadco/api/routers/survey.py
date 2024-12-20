@@ -15,7 +15,7 @@ from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, Wa
                               SedimentModel, SedimentPollutionModel, SedimentChemistryModel, CurrentsModel,
                               WeatherModel, SurveySearchResult, HydroSurveyModel, CurrentDepthModel,
                               CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel, SearchFacetModel,
-                              SearchFacetItemsModel)
+                              SearchFacetItemsModel, SurveyTypeModel)
 
 from sadco.api.lib.auth import Authorize
 from sadco.db import Session
@@ -611,6 +611,22 @@ async def get_unknown_survey(
         survey_id: str
 ):
     return get_survey_without_details(survey_id)
+
+
+@router.get(
+    '/survey_types',
+    response_model=list[SurveyTypeModel],
+    dependencies=[Depends(Authorize(SADCOScope.SURVEYS_READ))],
+)
+async def get_all_survey_types():
+    return [
+        SurveyTypeModel(
+            code=row.SurveyType.code,
+            name=row.SurveyType.name,
+            description=row.SurveyType.description
+        )
+        for row in Session.execute(select(SurveyType))
+    ]
 
 
 def get_survey_without_details(survey_id: str) -> SurveyModel:
