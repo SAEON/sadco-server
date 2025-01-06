@@ -149,6 +149,7 @@ class SearchFacetModel(BaseModel):
 class SurveySearchResult(BaseModel):
     items: list[SurveyListItemModel]
     search_facets: list[SearchFacetModel]
+    filtered_facets: list[str]
     total: int
     page: int
     pages: int

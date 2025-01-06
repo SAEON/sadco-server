@@ -1,4 +1,5 @@
 from datetime import date
+from enum import Enum
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,22 +7,28 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
+from sadco.api.lib.auth import Authorize
 from sadco.api.lib.paging import Page, Paginator
-from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData, Sedphy, Sedpol1, Sedpol2,
-                             Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents, Weather, Currents, Survey, Station,
-                             SamplingDevice, InvStats, CurDepth, CurMooring, Institutes)
 from sadco.api.models import (SurveyModel, SurveyListItemModel, StationModel, WaterModel, WaterNutrientsModel,
                               WaterPollutionModel, WaterCurrentsModel, WaterChemistryModel, DataTypesModel,
                               SedimentModel, SedimentPollutionModel, SedimentChemistryModel, CurrentsModel,
                               WeatherModel, SurveySearchResult, HydroSurveyModel, CurrentDepthModel,
                               CurrentsSurveyModel, PeriodCountsModel, PeriodsSurveyModel, SearchFacetModel,
                               SearchFacetItemsModel, SurveyTypeModel)
-
-from sadco.api.lib.auth import Authorize
-from sadco.db import Session
 from sadco.const import SADCOScope, SurveyType as ConstSurveyType
+from sadco.db import Session
+from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData, Sedphy, Sedpol1, Sedpol2,
+                             Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents, Weather, Currents, Survey, Station,
+                             SamplingDevice, InvStats, CurDepth, CurMooring, Institutes)
 
 router = APIRouter()
+
+
+class SearchFacetQueryKey(str, Enum):
+    """Query keys for search facets"""
+    SAMPLING_DEVICE = 'sampling_device_code'
+    SURVEY_TYPE = 'survey_type_code'
+    INSTITUTE = 'institute_code'
 
 
 @router.get(
@@ -147,13 +154,16 @@ async def list_surveys(
         .group_by(SamplingDevice.code)
     )
 
+    filtered_facets = []
+
     if sampling_device_code is not None:
         sampling_device_query = sampling_device_query.where(SamplingDevice.code == sampling_device_code)
         stmt = stmt.join(Survey).join(Station).join(Sedphy).where(Sedphy.device_code == sampling_device_code)
+        filtered_facets.append(SearchFacetQueryKey.SAMPLING_DEVICE)
 
     sampling_devices_search_facet = SearchFacetModel(
         title='Sampling Devices',
-        query_key='sampling_device_code',
+        query_key=SearchFacetQueryKey.SAMPLING_DEVICE,
         items=[
             SearchFacetItemsModel(
                 code=row.code,
@@ -174,10 +184,11 @@ async def list_surveys(
     if survey_type_code is not None:
         survey_type_query = survey_type_query.where(SurveyType.code == survey_type_code)
         stmt = stmt.where(Inventory.survey_type_code == survey_type_code)
+        filtered_facets.append(SearchFacetQueryKey.SURVEY_TYPE)
 
     survey_types_search_facet = SearchFacetModel(
         title='Survey Types',
-        query_key='survey_type_code',
+        query_key=SearchFacetQueryKey.SURVEY_TYPE,
         items=[
             SearchFacetItemsModel(
                 code=row.code,
@@ -199,10 +210,11 @@ async def list_surveys(
     if institute_code is not None:
         institutes_query = institutes_query.where(Institutes.code == institute_code)
         stmt = stmt.where(Inventory.instit_code == institute_code)
+        filtered_facets.append(SearchFacetQueryKey.INSTITUTE)
 
     institutes_search_facet = SearchFacetModel(
         title='Institutes',
-        query_key='institute_code',
+        query_key=SearchFacetQueryKey.INSTITUTE,
         items=[
             SearchFacetItemsModel(
                 code=row.code,
@@ -246,6 +258,7 @@ async def list_surveys(
             institutes_search_facet,
             sampling_devices_search_facet
         ],
+        filtered_facets=filtered_facets,
         total=total,
         page=page,
         pages=ceil(total / limit) if limit else 0,
