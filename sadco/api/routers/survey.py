@@ -19,14 +19,13 @@ from sadco.const import SADCOScope, SurveyType as ConstSurveyType
 from sadco.db import Session
 from sadco.db.models import (Inventory, SurveyType, Watphy, Watnut, Watpol1, Watpol2, CurData, Sedphy, Sedpol1, Sedpol2,
                              Sedchem1, Sedchem2, Watchem1, Watchem2, Watcurrents, Weather, Currents, Survey, Station,
-                             SamplingDevice, InvStats, CurDepth, CurMooring, Institutes)
+                             InvStats, CurDepth, CurMooring, Institutes)
 
 router = APIRouter()
 
 
 class SearchFacetQueryKey(str, Enum):
     """Query keys for search facets"""
-    SAMPLING_DEVICE = 'sampling_device_code'
     SURVEY_TYPE = 'survey_type_code'
     INSTITUTE = 'institute_code'
 
@@ -147,82 +146,26 @@ async def list_surveys(
         if end_date:
             stmt = stmt.where(Inventory.date_start <= end_date)
 
-    sampling_device_query = (
-        select(func.count(Station.survey_id.distinct()).label('device_count'), SamplingDevice.code, SamplingDevice.name)
-        .join(Sedphy, SamplingDevice.code == Sedphy.device_code)
-        .join(Station, Station.station_id == Sedphy.station_id)
-        .group_by(SamplingDevice.code)
-    )
-
     filtered_facets = []
 
-    if sampling_device_code is not None:
-        sampling_device_query = sampling_device_query.where(SamplingDevice.code == sampling_device_code)
-        stmt = stmt.join(Survey).join(Station).join(Sedphy).where(Sedphy.device_code == sampling_device_code)
-        filtered_facets.append(SearchFacetQueryKey.SAMPLING_DEVICE)
-
-    sampling_devices_search_facet = SearchFacetModel(
-        title='Sampling Devices',
-        query_key=SearchFacetQueryKey.SAMPLING_DEVICE,
-        items=[
-            SearchFacetItemsModel(
-                code=row.code,
-                name=row.name,
-                count=row.device_count
-            )
-            for row in Session.execute(sampling_device_query)
-        ]
-    )
-
-    survey_type_query = (
-        select(func.count(Inventory.survey_id.distinct()).label('survey_type_count'), SurveyType.code, SurveyType.name)
-        .join(SurveyType)
-        .group_by(SurveyType.code)
-        .group_by(SurveyType.name)
-    )
-
     if survey_type_code is not None:
-        survey_type_query = survey_type_query.where(SurveyType.code == survey_type_code)
         stmt = stmt.where(Inventory.survey_type_code == survey_type_code)
         filtered_facets.append(SearchFacetQueryKey.SURVEY_TYPE)
+
+    if institute_code is not None:
+        stmt = stmt.where(Inventory.instit_code == institute_code)
+        filtered_facets.append(SearchFacetQueryKey.INSTITUTE)
 
     survey_types_search_facet = SearchFacetModel(
         title='Survey Types',
         query_key=SearchFacetQueryKey.SURVEY_TYPE,
-        items=[
-            SearchFacetItemsModel(
-                code=row.code,
-                name=row.name,
-                count=row.survey_type_count
-            )
-            for row in Session.execute(survey_type_query)
-        ]
+        items=get_search_facet_items(stmt, SurveyType)
     )
-
-    institutes_query = (
-        select(func.count(Inventory.survey_id.distinct()).label('institute_count'), Institutes.code, Institutes.name)
-        .join(Institutes)
-        .group_by(Institutes.code)
-        .group_by(Institutes.name)
-        .order_by(Institutes.name)
-    )
-
-    if institute_code is not None:
-        institutes_query = institutes_query.where(Institutes.code == institute_code)
-        stmt = stmt.where(Inventory.instit_code == institute_code)
-        filtered_facets.append(SearchFacetQueryKey.INSTITUTE)
 
     institutes_search_facet = SearchFacetModel(
         title='Institutes',
         query_key=SearchFacetQueryKey.INSTITUTE,
-        items=[
-            SearchFacetItemsModel(
-                code=row.code,
-                name=row.name,
-                count=row.institute_count
-            )
-            for row in Session.execute(institutes_query)
-        ]
+        items=get_search_facet_items(stmt, Institutes)
     )
 
     total = Session.execute(
@@ -256,13 +199,38 @@ async def list_surveys(
         search_facets=[
             survey_types_search_facet,
             institutes_search_facet,
-            sampling_devices_search_facet
         ],
         filtered_facets=filtered_facets,
         total=total,
         page=page,
         pages=ceil(total / limit) if limit else 0,
     )
+
+
+def get_search_facet_items(search_stmt, search_facet_db_model) -> list[SearchFacetModel]:
+    return [
+        SearchFacetItemsModel(
+            code=row.code,
+            name=row.name,
+            count=row.institute_count
+        )
+        for row in Session.execute(
+            select(
+                search_facet_db_model.code,
+                search_facet_db_model.name,
+                func.count().label('institute_count')
+            ).join_from(
+                search_stmt.subquery(),
+                search_facet_db_model
+            ).group_by(
+                search_facet_db_model.code,
+                search_facet_db_model.name
+            )
+            .order_by(
+                search_facet_db_model.name
+            )
+        )
+    ]
 
 
 def get_chief_scientist(inventory: Inventory) -> str:
