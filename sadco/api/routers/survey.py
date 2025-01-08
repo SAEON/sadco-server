@@ -75,7 +75,6 @@ async def list_surveys(
 )
 async def list_surveys(
         survey_id: str = Query(None, title='Survey ID'),
-        sampling_device_code: int = Query(None, title='Sampling device'),
         survey_type_code: str = Query(None, title='Survey type'),
         institute_code: str = Query(None, title='Institute'),
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
