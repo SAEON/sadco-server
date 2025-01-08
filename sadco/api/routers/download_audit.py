@@ -47,7 +47,7 @@ def get_paginated_downloads(paginator, stmt):
         lambda row: DownloadAuditModel(
             timestamp=row.DownloadAudit.timestamp.strftime("%d/%m/%Y %H:%M"),
             survey_type=row.DownloadAudit.survey_type,
-            parameters=json.loads(row.DownloadAudit.parameters)
+            parameters=json.loads(row.DownloadAudit.parameters if row.DownloadAudit.parameters else '{}'),
         ),
         sort='timestamp',
     )
