@@ -17,6 +17,7 @@ jobs:
         with:
           repository: SAEON/odp-core
           path: odp-core
+          ref: sadco
 
       - name: Set up Python
         uses: actions/setup-python@v4
