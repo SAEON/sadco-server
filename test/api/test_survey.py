@@ -213,9 +213,10 @@ def test_search_survey_type(api, inventory, scopes):
         for item in json['items']:
             assert item['survey_type'] == survey_type.name
 
-        for fetched_survey_type in json['survey_types']:
-            assert fetched_survey_type['code'] == survey_type.code
-
+        for search_facet in json['search_facets']:
+            if search_facet['query_key'] == 'survey_type_code':
+                assert len(search_facet['items']) == 1
+                assert search_facet['items'][0]['name'] == survey_type.name
 
 @pytest.mark.require_scope(SADCOScope.SURVEYS_READ)
 def test_search_institute(api, inventory, scopes):
@@ -244,8 +245,10 @@ def test_search_institute(api, inventory, scopes):
         for item in json['items']:
             assert item['institute'] == institute.name
 
-        for fetched_institute in json['institutes']:
-            assert fetched_institute['code'] == institute.code
+        for search_facet in json['search_facets']:
+            if search_facet['query_key'] == 'institute_code':
+                assert len(search_facet['items']) == 1
+                assert search_facet['items'][0]['code'] == str(institute.code)
 
 
 @pytest.mark.require_scope(SADCOScope.HYDRO_READ)
