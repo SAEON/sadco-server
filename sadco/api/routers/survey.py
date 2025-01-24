@@ -162,7 +162,7 @@ async def list_surveys(
     )
 
     institutes_search_facet = SearchFacetModel(
-        title='Institutes',
+        title='Institutions',
         query_key=SearchFacetQueryKey.INSTITUTE,
         items=get_search_facet_items(stmt, Institutes)
     )
@@ -206,7 +206,7 @@ async def list_surveys(
     )
 
 
-def get_search_facet_items(search_stmt, search_facet_db_model) -> list[SearchFacetModel]:
+def get_search_facet_items(search_stmt, search_facet_db_model) -> list[SearchFacetItemsModel]:
     return [
         SearchFacetItemsModel(
             code=row.code,
