@@ -1,9 +1,10 @@
+import time
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func, union
-from starlette.status import HTTP_404_NOT_FOUND
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_413_REQUEST_ENTITY_TOO_LARGE
 
 from sadco.api.lib.auth import Authorize, Authorized
 from sadco.api.lib.download import get_csv_data, audit_download_request
@@ -13,6 +14,8 @@ from sadco.db import Session
 from sadco.db.models import VosMain, VosArch, VosArch2, VosMain2, VosMain68
 
 router = APIRouter()
+
+VOS_DOWNLOAD_LIMIT = 4000000
 
 
 @router.get(
@@ -30,7 +33,7 @@ async def list_surveys(
         exclusive_region: bool = Query(False, title='Exclude partial spatial matches'),
         exclusive_interval: bool = Query(False, title='Exclude partial temporal matches'),
 ):
-    stmt_vos_union = get_vos_union_statement(
+    total = get_record_count(
         north_bound,
         south_bound,
         east_bound,
@@ -38,13 +41,8 @@ async def list_surveys(
         start_date,
         end_date,
         exclusive_region,
-        exclusive_interval,
-        is_count_only=True
+        exclusive_interval
     )
-
-    total = Session.execute(
-        select(func.sum(stmt_vos_union.c.vos_record_count))
-    ).scalar_one()
 
     return VosSurveySearchResult(
         total=total
@@ -66,6 +64,20 @@ async def download_vos_survey_data(
         exclusive_interval: bool = Query(False, title='Exclude partial temporal matches'),
         auth: Authorized = Depends(Authorize(SADCOScope.VOS_DOWNLOAD))
 ):
+    total = get_record_count(
+        north_bound,
+        south_bound,
+        east_bound,
+        west_bound,
+        start_date,
+        end_date,
+        exclusive_region,
+        exclusive_interval
+    )
+
+    if total > VOS_DOWNLOAD_LIMIT:
+        raise HTTPException(HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Download size too large")
+
     stmt_vos_union = get_vos_union_statement(
         north_bound,
         south_bound,
@@ -96,6 +108,33 @@ async def download_vos_survey_data(
     )
 
     return zipped_csv_data.get('zipped_response')
+
+
+def get_record_count(
+        north_bound,
+        south_bound,
+        east_bound,
+        west_bound,
+        start_date,
+        end_date,
+        exclusive_region,
+        exclusive_interval,
+):
+    stmt_vos_union = get_vos_union_statement(
+        north_bound,
+        south_bound,
+        east_bound,
+        west_bound,
+        start_date,
+        end_date,
+        exclusive_region,
+        exclusive_interval,
+        is_count_only=True
+    )
+
+    return Session.execute(
+        select(func.sum(stmt_vos_union.c.vos_record_count))
+    ).scalar_one()
 
 
 def get_vos_items(statement) -> list:
