@@ -5,12 +5,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func, union
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.api.lib.download import get_csv_data, audit_download_request
-from sadco.db.models import VosMain, VosArch, VosArch2, VosMain2, VosMain68
-from sadco.api.models import VosSurveySearchResult, VosSurveyDownloadModel
 from sadco.api.lib.auth import Authorize, Authorized
-from sadco.db import Session
+from sadco.api.lib.download import get_csv_data, audit_download_request
+from sadco.api.models import VosSurveySearchResult
 from sadco.const import SADCOScope, SurveyType
+from sadco.db import Session
+from sadco.db.models import VosMain, VosArch, VosArch2, VosMain2, VosMain68
 
 router = APIRouter()
 
@@ -99,16 +99,10 @@ async def download_vos_survey_data(
 
 
 def get_vos_items(statement) -> list:
-    if not (results := Session.execute(statement).unique()):
+    if not (results := Session.execute(statement).all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        VosSurveyDownloadModel(
-            **{key: value for key, value in row._mapping.items() if key != 'latitude'},
-            latitude=-row.latitude
-        ).dict()
-        for row in results
-    ]
+    return results
 
 
 def get_vos_union_statement(
@@ -160,7 +154,25 @@ def get_statement(vos_model, is_count_only: bool = False):
             )
         )
     else:
-        return select(vos_model)
+        return select(
+            -vos_model.latitude,
+            vos_model.longitude,
+            vos_model.date_time,
+            vos_model.callsign,
+            vos_model.atmospheric_pressure,
+            vos_model.surface_temperature,
+            vos_model.drybulb,
+            vos_model.wetbulb,
+            vos_model.dewpoint,
+            vos_model.cloud_amount,
+            vos_model.swell_direction,
+            vos_model.swell_height,
+            vos_model.swell_period,
+            vos_model.wave_height,
+            vos_model.wave_period,
+            vos_model.wind_direction,
+            vos_model.wind_speed
+        )
 
 
 def get_filtered_statement(
