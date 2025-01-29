@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -5,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
-                             Inventory, WetStation, WetPeriod, WavStation)
+                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData)
 
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
@@ -73,10 +75,13 @@ def get_currents_items(survey_id: str) -> list:
         )
     )
 
+    start_time = time.time()
     if not (results := Session.execute(stmt).unique()):
         raise HTTPException(HTTP_404_NOT_FOUND)
+    print(f'Currents DB time: {time.time() - start_time}')
 
-    return [
+    start_time = time.time()
+    current_list = [
         CurrentsDownloadModel(
             sampling_depth=cur_depth.spldep,
             instrument=cur_depth.edm_instrument2.name,
@@ -98,13 +103,16 @@ def get_currents_items(survey_id: str) -> list:
         for cur_depth in row.CurMooring.cur_depths
         for cur_data in cur_depth.cur_data_list
     ]
+    print(f'Current build list time: {time.time() - start_time}')
+
+    return current_list
 
 
 @router.get(
     f"/{ConstSurveyType.WEATHER.value}/{{survey_id}}",
     response_class=StreamingResponse
 )
-async def download_currents_survey_data(
+async def download_weather_survey_data(
         survey_id: str,
         data_type: str = Query(None, title='Data Type'),
         auth: Authorized = Depends(Authorize(SADCOScope.WEATHER_DOWNLOAD))
@@ -122,58 +130,50 @@ async def download_currents_survey_data(
 def get_weather_items(survey_id: str) -> list:
     stmt = (
         select(
-            Inventory
-        ).where(Inventory.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Inventory.wet_stations).
-            joinedload(WetStation.wet_periods).
-            joinedload(WetPeriod.wet_data_list)
+            WetStation.name.label("station_name"),
+            WetStation.latitude,
+            WetStation.longitude,
+            WetPeriod.height_msl.label("msl_height"),
+            WetPeriod.height_surface.label("surface_height"),
+            WetData.date_time.label("record_date"),
+            WetData.air_temp_ave.label("ave_air_temp"),
+            WetData.air_temp_min.label("min_air_temp"),
+            WetData.air_temp_min_time.label("min_air_temp_time"),
+            WetData.air_temp_max.label("max_air_temp"),
+            WetData.air_temp_max_time.label("max_air_temp_time"),
+            WetData.barometric_pressure,
+            WetData.fog,
+            WetData.rainfall,
+            WetData.relative_humidity,
+            WetData.solar_radiation,
+            WetData.solar_radiation_max.label("max_solar_radiation"),
+            WetData.wind_dir.label("wind_direction"),
+            WetData.wind_speed_ave.label("ave_wind_speed"),
+            WetData.wind_speed_min.label("min_wind_speed"),
+            WetData.wind_speed_max.label("max_wind_speed"),
+            WetData.wind_speed_max_time.label("max_wind_speed_time"),
+            WetData.wind_speed_max_length.label("max_wind_speed_duration"),
+            WetData.wind_speed_max_dir.label("max_wind_speed_direction"),
+            WetData.wind_speed_std.label("max_wind_speed_standard_deviation"),
         )
+        .join(Inventory.wet_stations)
+        .join(WetStation.wet_periods)
+        .join(WetPeriod.wet_data_list)
+        .where(Inventory.survey_id == survey_id.replace("-", "/"))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    results = Session.execute(stmt).all()
+    if not results:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        WeatherDownloadModel(
-            station_name=wet_station.name,
-            latitude=wet_station.latitude,
-            longitude=wet_station.longitude,
-            msl_height=wet_period.height_msl,
-            surface_height=wet_period.height_surface,
-            record_date=wet_data.date_time,
-            ave_air_temp=wet_data.air_temp_ave,
-            min_air_temp=wet_data.air_temp_min,
-            min_air_temp_time=wet_data.air_temp_min_time,
-            max_air_temp=wet_data.air_temp_max,
-            max_air_temp_time=wet_data.air_temp_max_time,
-            barometric_pressure=wet_data.barometric_pressure,
-            fog=wet_data.fog,
-            rainfall=wet_data.rainfall,
-            relative_humidity=wet_data.relative_humidity,
-            solar_radiation=wet_data.solar_radiation,
-            max_solar_radiation=wet_data.solar_radiation_max,
-            wind_direction=wet_data.wind_dir,
-            ave_wind_speed=wet_data.wind_speed_ave,
-            min_wind_speed=wet_data.wind_speed_min,
-            max_wind_speed=wet_data.wind_speed_max,
-            max_wind_speed_time=wet_data.wind_speed_max_time,
-            max_wind_speed_duration=wet_data.wind_speed_max_length,
-            max_wind_speed_direction=wet_data.wind_speed_max_dir,
-            max_wind_speed_standard_deviation=wet_data.wind_speed_std
-        ).dict()
-        for row in results
-        for wet_station in row.Inventory.wet_stations
-        for wet_period in wet_station.wet_periods
-        for wet_data in wet_period.wet_data_list
-    ]
+    return results
 
 
 @router.get(
     f"/{ConstSurveyType.WAVES.value}/{{survey_id}}",
     response_class=StreamingResponse
 )
-async def download_currents_survey_data(
+async def download_waves_survey_data(
         survey_id: str,
         data_type: str = Query(None, title='Data Type'),
         auth: Authorized = Depends(Authorize(SADCOScope.WAVES_DOWNLOAD))
@@ -191,36 +191,44 @@ async def download_currents_survey_data(
 def get_waves_items(survey_id: str) -> list:
     stmt = (
         select(
-            Inventory
-        ).where(Inventory.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Inventory.wav_stations).
-            joinedload(WavStation.wav_data_list)
+            WavStation.latitude,
+            WavStation.longitude,
+            WavStation.instrument_depth,
+            WavStation.name.label("station_name"),
+            WavStation.water_depth,
+            WavData.date_time,
+            WavData.number_readings,
+            WavData.record_length,
+            WavData.deltaf,
+            WavData.deltat,
+            WavData.frequency,
+            WavData.qp,
+            WavData.tb,
+            WavData.te,
+            WavData.wap,
+            WavData.eps,
+            WavData.hmo,
+            WavData.h1,
+            WavData.hs,
+            WavData.hmax,
+            WavData.tc,
+            WavData.tp,
+            WavData.tz,
+            WavData.ave_direction,
+            WavData.ave_spreading,
+            WavData.instrument_code,
+            WavData.mean_direction,
+            WavData.mean_spreading,
         )
+        .join(Inventory.wav_stations)
+        .join(WavStation.wav_data_list)
+        .where(Inventory.survey_id == survey_id.replace("-", "/"))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        WavesDownloadModel(
-            station_name=wav_station.name,
-            latitude=wav_station.latitude,
-            longitude=wav_station.longitude,
-            instrument_depth=wav_station.instrument_depth,
-            water_depth=wav_station.water_depth,
-            **get_table_data(
-                wav_data,
-                [
-                    'code',
-                    'station_id'
-                ]
-            )
-        ).dict()
-        for row in results
-        for wav_station in row.Inventory.wav_stations
-        for wav_data in wav_station.wav_data_list
-    ]
+    return results
 
 
 @router.get(
