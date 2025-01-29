@@ -1,26 +1,21 @@
-import time
-
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
-                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData)
-
+from sadco.api.lib.auth import Authorize, Authorized
+from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
                               HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
-                              HydroCurrentsDownloadModel, CurrentsDownloadModel, WeatherDownloadModel,
-                              WavesDownloadModel)
-
-from sadco.db import Session
-from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
+                              HydroCurrentsDownloadModel)
 from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
-from sadco.api.lib.auth import Authorize, Authorized
+from sadco.db import Session
+from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
+                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData, CurWatphy, EDMInstrument2)
 
 router = APIRouter()
 
@@ -66,46 +61,36 @@ async def download_currents_survey_data(
 def get_currents_items(survey_id: str) -> list:
     stmt = (
         select(
-            CurMooring
-        ).where(CurMooring.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(CurMooring.cur_depths).
-            joinedload(CurDepth.cur_data_list).
-            joinedload(CurData.cur_watphy)
+            CurDepth.spldep.label("sampling_depth"),
+            EDMInstrument2.name.label("instrument"),
+            CurDepth.time_interval,
+            CurDepth.passkey,
+            CurDepth.parameters,
+            CurData.datetime,
+            CurData.speed,
+            CurData.direction,
+            CurData.temperature,
+            CurData.vert_velocity,
+            CurData.f_speed_9,
+            CurData.f_direction_9,
+            CurData.f_speed_14,
+            CurData.f_direction_14,
+            CurData.pressure,
+            CurWatphy.ph,
+            CurWatphy.salinity,
+            CurWatphy.dis_oxy.label("dissolved_oxygen")
         )
+        .join(CurMooring, CurDepth.mooring_code == CurMooring.code)
+        .join(CurData, CurDepth.code == CurData.depth_code)
+        .outerjoin(CurWatphy, CurData.code == CurWatphy.data_code)
+        .outerjoin(EDMInstrument2, CurDepth.instrument_number == EDMInstrument2.code)
+        .where(CurMooring.survey_id == survey_id.replace("-", "/"))
     )
 
-    start_time = time.time()
     if not (results := Session.execute(stmt).unique()):
         raise HTTPException(HTTP_404_NOT_FOUND)
-    print(f'Currents DB time: {time.time() - start_time}')
 
-    start_time = time.time()
-    current_list = [
-        CurrentsDownloadModel(
-            sampling_depth=cur_depth.spldep,
-            instrument=cur_depth.edm_instrument2.name,
-            time_interval=cur_depth.time_interval,
-            passkey=cur_depth.passkey,
-            parameters=cur_depth.parameters,
-            **get_table_data(
-                cur_data,
-                [
-                    'code',
-                    'depth_code'
-                ]
-            ),
-            ph=cur_data.cur_watphy.ph if cur_data.cur_watphy else None,
-            salinity=cur_data.cur_watphy.salinity if cur_data.cur_watphy else None,
-            dissolved_oxygen=cur_data.cur_watphy.dis_oxy if cur_data.cur_watphy else None,
-        ).dict()
-        for row in results
-        for cur_depth in row.CurMooring.cur_depths
-        for cur_data in cur_depth.cur_data_list
-    ]
-    print(f'Current build list time: {time.time() - start_time}')
-
-    return current_list
+    return results
 
 
 @router.get(
