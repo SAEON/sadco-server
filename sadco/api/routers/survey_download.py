@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
@@ -262,22 +262,37 @@ def get_hydro_data_type_items(data_type: str, survey_id: str) -> list:
 
 def get_water_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list)
+        select(
+            Station.survey_id,
+            Station.latitude,
+            Station.longitude,
+            func.date(Station.date_start).label('date'),
+            Station.stnnam.label('station_name'),
+            Station.station_id,
+            Survey.planam.label('platform_name'),
+            Station.max_spldep.label('max_sampling_depth'),
+            Watphy.subdes,
+            Watphy.spldattim,
+            Watphy.spldep,
+            Watphy.filtered,
+            Watphy.disoxygen,
+            Watphy.salinity,
+            Watphy.temperature,
+            Watphy.sound_flag,
+            Watphy.soundv,
+            Watphy.turbidity,
+            Watphy.pressure,
+            Watphy.fluorescence,
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_physical_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
