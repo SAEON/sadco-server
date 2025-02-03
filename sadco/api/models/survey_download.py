@@ -33,16 +33,6 @@ class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     fluorescence: Optional[float]
 
 
-class HydroWaterNutrientAndChemistryDownloadModel(HydroWaterPhysicalDownloadModel):
-    no2: Optional[float]
-    no3: Optional[float]
-    po4: Optional[float]
-    ptot: Optional[float]
-    sio3: Optional[float]
-    ph: Optional[float]
-    chla: Optional[float]
-
-
 class HydroWaterPollutionDownloadModel(HydroWaterPhysicalDownloadModel):
     arsenic: Optional[float]
     cadmium: Optional[float]

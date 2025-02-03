@@ -6,8 +6,7 @@ from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.api.lib.auth import Authorize, Authorized
 from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
-from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
-                              HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
+from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel, HydroWaterPollutionDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
                               HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
@@ -15,7 +14,8 @@ from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadMode
 from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.db import Session
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
-                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData, CurWatphy, EDMInstrument2)
+                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData, CurWatphy, EDMInstrument2,
+                             Watnut, Watchem1, Watchl)
 
 router = APIRouter()
 
@@ -297,33 +297,47 @@ def get_water_items(survey_id: str) -> list:
 
 def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watnut)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watchem1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watchl)
+        select(
+            Station.survey_id,
+            Station.latitude,
+            Station.longitude,
+            func.date(Station.date_start).label('date'),
+            Station.stnnam.label('station_name'),
+            Station.station_id,
+            Survey.planam.label('platform_name'),
+            Station.max_spldep.label('max_sampling_depth'),
+            Watphy.subdes,
+            Watphy.spldattim,
+            Watphy.spldep,
+            Watphy.filtered,
+            Watphy.disoxygen,
+            Watphy.salinity,
+            Watphy.temperature,
+            Watphy.sound_flag,
+            Watphy.soundv,
+            Watphy.turbidity,
+            Watphy.pressure,
+            Watphy.fluorescence,
+            Watnut.no2,
+            Watnut.no3,
+            Watnut.po4,
+            Watnut.ptot,
+            Watnut.sio3,
+            Watchem1.ph,
+            Watchl.chla
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .outerjoin(Watchl, Watphy.code == Watchl.watphy_code)
+        .outerjoin(Watnut, Watphy.code == Watnut.watphy_code)
+        .outerjoin(Watchem1, Watphy.code == Watchem1.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_nutrients_and_chemistry_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_pollution_items(survey_id: str) -> list:
@@ -579,23 +593,6 @@ def get_hydro_water_pollution_download_model(
                 'watphy_code'
             ]
         )
-    )
-
-
-def get_hydro_water_nutrients_and_chemistry_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterNutrientAndChemistryDownloadModel:
-    return HydroWaterNutrientAndChemistryDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        no2=watphy.watnut.no2 if watphy.watnut else None,
-        no3=watphy.watnut.no3 if watphy.watnut else None,
-        po4=watphy.watnut.po4 if watphy.watnut else None,
-        ptot=watphy.watnut.ptot if watphy.watnut else None,
-        sio3=watphy.watnut.sio3 if watphy.watnut else None,
-        ph=watphy.watchem1.ph if watphy.watchem1 else None,
-        chla=watphy.watchl.chla if watphy.watchl else None,
     )
 
 
