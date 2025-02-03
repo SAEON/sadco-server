@@ -17,3 +17,4 @@ alembic
 
 # deployment
 uvicorn
+memory_profiler

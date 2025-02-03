@@ -13,6 +13,8 @@ from sadco.const import SADCOScope, SurveyType
 from sadco.db import Session
 from sadco.db.models import VosMain, VosArch, VosArch2, VosMain2, VosMain68
 
+from memory_profiler import profile
+
 router = APIRouter()
 
 VOS_DOWNLOAD_LIMIT = 4000000
@@ -53,6 +55,7 @@ async def list_surveys(
     "/download",
     response_class=StreamingResponse
 )
+@profile
 async def download_vos_survey_data(
         north_bound: float = Query(None, title='North bound latitude', ge=-90, le=90),
         south_bound: float = Query(None, title='South bound latitude', ge=-90, le=90),
