@@ -33,30 +33,6 @@ class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     fluorescence: Optional[float]
 
 
-class HydroWaterChemistryDownloadModel(HydroWaterPhysicalDownloadModel):
-    dic: Optional[float]
-    doc: Optional[float]
-    fluoride: Optional[float]
-    iodene: Optional[float]
-    iodate: Optional[float]
-    kjn: Optional[float]
-    nh3: Optional[float]
-    nitrogen: Optional[float]
-    oxa: Optional[float]
-    ph: Optional[float]
-    calcium: Optional[float]
-    cesium: Optional[float]
-    hydrocarbons: Optional[float]
-    magnesium: Optional[float]
-    pah: Optional[float]
-    potassium: Optional[float]
-    rubidium: Optional[float]
-    sodium: Optional[float]
-    strontium: Optional[float]
-    so4: Optional[float]
-    sussol: Optional[float]
-
-
 class HydroWaterNutrientsDownloadModel(HydroWaterPhysicalDownloadModel):
     no2: Optional[float]
     no3: Optional[float]
