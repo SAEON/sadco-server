@@ -6,7 +6,7 @@ from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.api.lib.auth import Authorize, Authorized
 from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
-from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel, HydroWaterPollutionDownloadModel,
+from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
                               HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
                               HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
@@ -15,7 +15,7 @@ from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.db import Session
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
                              Inventory, WetStation, WetPeriod, WavStation, WetData, WavData, CurWatphy, EDMInstrument2,
-                             Watnut, Watchem1, Watchl)
+                             Watnut, Watchem1, Watchl, Watpol1, Watpol2)
 
 router = APIRouter()
 
@@ -263,26 +263,7 @@ def get_hydro_data_type_items(data_type: str, survey_id: str) -> list:
 def get_water_items(survey_id: str) -> list:
     stmt = (
         select(
-            Station.survey_id,
-            Station.latitude,
-            Station.longitude,
-            func.date(Station.date_start).label('date'),
-            Station.stnnam.label('station_name'),
-            Station.station_id,
-            Survey.planam.label('platform_name'),
-            Station.max_spldep.label('max_sampling_depth'),
-            Watphy.subdes,
-            Watphy.spldattim,
-            Watphy.spldep,
-            Watphy.filtered,
-            Watphy.disoxygen,
-            Watphy.salinity,
-            Watphy.temperature,
-            Watphy.sound_flag,
-            Watphy.soundv,
-            Watphy.turbidity,
-            Watphy.pressure,
-            Watphy.fluorescence,
+            *get_hydro_fields()
         )
         .join(Survey, Station.survey_id == Survey.survey_id)
         .join(Watphy, Watphy.station_id == Station.station_id)
@@ -298,26 +279,7 @@ def get_water_items(survey_id: str) -> list:
 def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
     stmt = (
         select(
-            Station.survey_id,
-            Station.latitude,
-            Station.longitude,
-            func.date(Station.date_start).label('date'),
-            Station.stnnam.label('station_name'),
-            Station.station_id,
-            Survey.planam.label('platform_name'),
-            Station.max_spldep.label('max_sampling_depth'),
-            Watphy.subdes,
-            Watphy.spldattim,
-            Watphy.spldep,
-            Watphy.filtered,
-            Watphy.disoxygen,
-            Watphy.salinity,
-            Watphy.temperature,
-            Watphy.sound_flag,
-            Watphy.soundv,
-            Watphy.turbidity,
-            Watphy.pressure,
-            Watphy.fluorescence,
+            *get_hydro_fields(),
             Watnut.no2,
             Watnut.no3,
             Watnut.po4,
@@ -342,28 +304,39 @@ def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
 
 def get_water_pollution_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watpol1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watpol2)
+        select(
+            *get_hydro_fields(),
+            Watpol1.arsenic,
+            Watpol1.cadmium,
+            Watpol1.chromium,
+            Watpol1.cobalt,
+            Watpol1.copper,
+            Watpol1.iron,
+            Watpol1.lead,
+            Watpol1.manganese,
+            Watpol1.mercury,
+            Watpol1.nickel,
+            Watpol1.selenium,
+            Watpol1.zinc,
+            Watpol2.aluminium,
+            Watpol2.antimony,
+            Watpol2.bismuth,
+            Watpol2.molybdenum,
+            Watpol2.silver,
+            Watpol2.titanium,
+            Watpol2.vanadium
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .outerjoin(Watpol1, Watphy.code == Watpol1.watphy_code)
+        .outerjoin(Watpol2, Watphy.code == Watpol2.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_pollution_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_chemistry_items(survey_id: str) -> list:
@@ -574,28 +547,6 @@ def get_hydro_nutrients_download_model(
     )
 
 
-def get_hydro_water_pollution_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterPollutionDownloadModel:
-    return HydroWaterPollutionDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(
-            watphy.watpol1,
-            fields_to_ignore=[
-                'watphy_code'
-            ]
-        ),
-        **get_table_data(
-            watphy.watpol2,
-            fields_to_ignore=[
-                'watphy_code'
-            ]
-        )
-    )
-
-
 def get_hydro_water_physical_download_model(
         watphy: Watphy,
         station: Station,
@@ -692,6 +643,31 @@ def get_hydro_currents_download_model(
         ),
         spldattim=currents.spldattim.strftime("%m/%d/%Y %H:%M:%S") if currents.spldattim else ''
     )
+
+
+def get_hydro_fields() -> list:
+    return [
+        Station.survey_id,
+        Station.latitude,
+        Station.longitude,
+        func.date(Station.date_start).label('date'),
+        Station.stnnam.label('station_name'),
+        Station.station_id,
+        Survey.planam.label('platform_name'),
+        Station.max_spldep.label('max_sampling_depth'),
+        Watphy.subdes,
+        Watphy.spldattim,
+        Watphy.spldep,
+        Watphy.filtered,
+        Watphy.disoxygen,
+        Watphy.salinity,
+        Watphy.temperature,
+        Watphy.sound_flag,
+        Watphy.soundv,
+        Watphy.turbidity,
+        Watphy.pressure,
+        Watphy.fluorescence,
+    ]
 
 
 def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadModel:

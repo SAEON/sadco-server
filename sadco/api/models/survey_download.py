@@ -33,28 +33,6 @@ class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     fluorescence: Optional[float]
 
 
-class HydroWaterPollutionDownloadModel(HydroWaterPhysicalDownloadModel):
-    arsenic: Optional[float]
-    cadmium: Optional[float]
-    chromium: Optional[float]
-    cobalt: Optional[float]
-    copper: Optional[float]
-    iron: Optional[float]
-    lead: Optional[float]
-    manganese: Optional[float]
-    mercury: Optional[float]
-    nickel: Optional[float]
-    selenium: Optional[float]
-    zinc: Optional[float]
-    aluminium: Optional[float]
-    antimony: Optional[float]
-    bismuth: Optional[float]
-    molybdenum: Optional[float]
-    silver: Optional[float]
-    titanium: Optional[float]
-    vanadium: Optional[float]
-
-
 class HydroWaterChemistryDownloadModel(HydroWaterPhysicalDownloadModel):
     dic: Optional[float]
     doc: Optional[float]
