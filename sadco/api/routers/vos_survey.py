@@ -67,6 +67,7 @@ async def download_vos_survey_data(
         exclusive_interval: bool = Query(False, title='Exclude partial temporal matches'),
         auth: Authorized = Depends(Authorize(SADCOScope.VOS_DOWNLOAD))
 ):
+    start_time = time.time()
     total = get_record_count(
         north_bound,
         south_bound,
@@ -77,6 +78,7 @@ async def download_vos_survey_data(
         exclusive_region,
         exclusive_interval
     )
+    print(f'Get total count time: {time.time() - start_time}')
 
     if total > VOS_DOWNLOAD_LIMIT:
         raise HTTPException(HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Download size too large")
@@ -92,9 +94,13 @@ async def download_vos_survey_data(
         exclusive_interval
     )
 
+    start_time = time.time()
     items = get_vos_items(stmt_vos_union)
+    print(f'Get VOS items time: {time.time() - start_time}')
 
+    start_time = time.time()
     zipped_csv_data: dict = get_csv_data(items, 'VOS', 'VOS')
+    print(f'Get Zip data time: {time.time() - start_time}')
 
     audit_download_request(
         auth,
