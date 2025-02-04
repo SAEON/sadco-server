@@ -4,9 +4,7 @@ from .survey import (SurveyModel, SurveyListItemModel, StationModel, WaterModel,
                      SedimentChemistryModel, HydroSurveyModel, SedimentPollutionModel, SedimentModel,
                      CurrentsModel, WeatherModel, SurveySearchResult, CurrentDepthModel, CurrentsSurveyModel,
                      PeriodCountsModel, PeriodsSurveyModel, SearchFacetModel, SearchFacetItemsModel, SurveyTypeModel)
-from .survey_download import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
-                              HydroSedimentPhysicalDownloadModel,
+from .survey_download import (HydroDownloadModel, HydroWaterPhysicalDownloadModel, HydroSedimentPhysicalDownloadModel,
                               HydroSedimentChemistryDownloadModel, HydroSedimentPollutionDownloadModel,
-                              HydroWaterNutrientsDownloadModel, HydroWeatherDownloadModel,
-                              HydroCurrentsDownloadModel)
+                              HydroWeatherDownloadModel, HydroCurrentsDownloadModel)
 from .vos_survey import VosSurveySearchResult

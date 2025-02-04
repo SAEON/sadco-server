@@ -33,16 +33,6 @@ class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     fluorescence: Optional[float]
 
 
-class HydroWaterNutrientsDownloadModel(HydroWaterPhysicalDownloadModel):
-    no2: Optional[float]
-    no3: Optional[float]
-    p: Optional[float]
-    po4: Optional[float]
-    ptot: Optional[float]
-    sio3: Optional[float]
-    sio4: Optional[float]
-
-
 class HydroSedimentPhysicalDownloadModel(HydroDownloadModel):
     subdes: Optional[str]
     spldattim: Optional[str]

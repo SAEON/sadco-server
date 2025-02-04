@@ -7,9 +7,8 @@ from starlette.status import HTTP_404_NOT_FOUND
 from sadco.api.lib.auth import Authorize, Authorized
 from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
 from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel, HydroSedimentPhysicalDownloadModel,
-                              HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
-                              HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
-                              HydroCurrentsDownloadModel)
+                              HydroSedimentPollutionDownloadModel, HydroSedimentChemistryDownloadModel,
+                              HydroWeatherDownloadModel, HydroCurrentsDownloadModel)
 from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.db import Session
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
@@ -379,23 +378,26 @@ def get_water_chemistry_items(survey_id: str) -> list:
 
 def get_water_nutrients_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watnut)
+        select(
+            *get_hydro_fields(),
+            Watnut.no2,
+            Watnut.no3,
+            Watnut.p,
+            Watnut.po4,
+            Watnut.ptot,
+            Watnut.sio3,
+            Watnut.sio4,
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .join(Watnut, Watphy.code == Watnut.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_nutrients_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_sediment_items(survey_id: str) -> list:
@@ -523,17 +525,6 @@ def get_hydro_weather_download_model(
                 'station_id'
             ]
         )
-    )
-
-
-def get_hydro_nutrients_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterNutrientsDownloadModel:
-    return HydroWaterNutrientsDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(watphy.watnut)
     )
 
 
