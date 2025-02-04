@@ -1,4 +1,3 @@
-from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel
@@ -31,61 +30,6 @@ class HydroWaterPhysicalDownloadModel(HydroDownloadModel):
     turbidity: Optional[float]
     pressure: Optional[float]
     fluorescence: Optional[float]
-
-
-class HydroSedimentPhysicalDownloadModel(HydroDownloadModel):
-    subdes: Optional[str]
-    spldattim: Optional[str]
-    spldep: Optional[float]
-    spldis: Optional[float]
-    splvol: Optional[float]
-    sievsz: Optional[float]
-    kurt: Optional[float]
-    skew: Optional[float]
-    meanpz: Optional[float]
-    medipz: Optional[float]
-    pctsat: Optional[float]
-    pctsil: Optional[float]
-    permty: Optional[float]
-    porsty: Optional[float]
-    dwf: Optional[float]
-    cod: Optional[float]
-
-
-class HydroSedimentPollutionDownloadModel(HydroSedimentPhysicalDownloadModel):
-    arsenic: Optional[float]
-    cadmium: Optional[float]
-    chromium: Optional[float]
-    cobalt: Optional[float]
-    copper: Optional[float]
-    iron: Optional[float]
-    lead: Optional[float]
-    manganese: Optional[float]
-    mercury: Optional[float]
-    nickel: Optional[float]
-    selenium: Optional[float]
-    zinc: Optional[float]
-    aluminium: Optional[float]
-    antimony: Optional[float]
-    bismuth: Optional[float]
-    molybdenum: Optional[float]
-    silver: Optional[float]
-    titanium: Optional[float]
-    vanadium: Optional[float]
-
-
-class HydroSedimentChemistryDownloadModel(HydroSedimentPhysicalDownloadModel):
-    fluoride: Optional[float]
-    kjn: Optional[float]
-    oxa: Optional[float]
-    toc: Optional[float]
-    ptot: Optional[float]
-    calcium: Optional[float]
-    magnesium: Optional[float]
-    potassium: Optional[float]
-    sodium: Optional[float]
-    strontium: Optional[float]
-    so3: Optional[float]
 
 
 class HydroWeatherDownloadModel(HydroDownloadModel):
