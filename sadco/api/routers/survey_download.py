@@ -1,13 +1,10 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func
-from sqlalchemy.orm import joinedload
 from starlette.status import HTTP_404_NOT_FOUND
 
 from sadco.api.lib.auth import Authorize, Authorized
-from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
-from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel, HydroWeatherDownloadModel,
-                              HydroCurrentsDownloadModel)
+from sadco.api.lib.download import get_csv_data, audit_download_request
 from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.db import Session
 from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
@@ -409,7 +406,7 @@ def get_sediment_items(survey_id: str) -> list:
         .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return results
@@ -446,7 +443,7 @@ def get_sediment_pollution_items(survey_id: str) -> list:
         .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return results
@@ -475,7 +472,7 @@ def get_sediment_chemistry_items(survey_id: str) -> list:
         .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
     return results
@@ -483,76 +480,56 @@ def get_sediment_chemistry_items(survey_id: str) -> list:
 
 def get_hydro_weather_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.weather_list)
+        select(
+            *get_hydro_fields(),
+            Weather.nav_equip_type,
+            Weather.atmosph_pres,
+            Weather.surface_tmp,
+            Weather.drybulb,
+            Weather.wetbulb,
+            Weather.cloud,
+            Weather.vis_code,
+            Weather.weather_code,
+            Weather.water_color,
+            Weather.transparency,
+            Weather.wind_dir,
+            Weather.wind_speed,
+            Weather.swell_dir,
+            Weather.swell_height,
+            Weather.swell_period,
+            Weather.dupflag
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Weather, Weather.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_weather_download_model(row.Survey, station, weather).dict()
-        for row in results
-        for station in row.Survey.stations
-        for weather in station.weather_list
-    ]
+    return results
 
 
 def get_hydro_currents_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.currents)
+        select(
+            *get_hydro_fields(),
+            Currents.subdes,
+            Currents.spldattim,
+            Currents.spldep,
+            Currents.current_dir,
+            Currents.current_speed,
+            Currents.perc_good
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Currents, Currents.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_currents_download_model(row.Survey, station, currents).dict()
-        for row in results
-        for station in row.Survey.stations
-        for currents in station.currents
-    ]
-
-
-def get_hydro_weather_download_model(
-        survey: Survey,
-        station: Station,
-        weather: Weather
-) -> HydroWeatherDownloadModel:
-    return HydroWeatherDownloadModel(
-        **get_hydro_download_model(station, survey).dict(),
-        **get_table_data(
-            weather,
-            fields_to_ignore=[
-                'station_id'
-            ]
-        )
-    )
-
-
-def get_hydro_currents_download_model(
-        survey: Survey,
-        station: Station,
-        currents: Currents
-) -> HydroCurrentsDownloadModel:
-    return HydroCurrentsDownloadModel(
-        **(get_hydro_download_model(station, survey).dict()),
-        **get_table_data(
-            currents,
-            fields_to_ignore=[
-                'station_id',
-                'spldattim'
-            ]
-        ),
-        spldattim=currents.spldattim.strftime("%m/%d/%Y %H:%M:%S") if currents.spldattim else ''
-    )
+    return results
 
 
 def get_hydro_water_fields() -> list:
@@ -606,19 +583,3 @@ def get_hydro_fields() -> list:
         Survey.planam.label('platform_name'),
         Station.max_spldep.label('max_sampling_depth'),
     ]
-
-
-def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadModel:
-    return HydroDownloadModel(
-        survey_id=station.survey_id,
-        latitude=station.latitude,
-        longitude=station.longitude,
-        year=station.date_start.year,
-        month=station.date_start.month,
-        day=station.date_start.day,
-        time='',
-        station_name=station.stnnam,
-        station_id=station.station_id,
-        platform_name=survey.planam,
-        max_sampling_depth=station.max_spldep,
-    )
