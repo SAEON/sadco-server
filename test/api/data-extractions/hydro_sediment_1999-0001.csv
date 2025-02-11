@@ -1,3 +1,3 @@
-survey_id,latitude,longitude,year,month,day,time,station_name,station_id,platform_name,max_sampling_depth,subdes,spldattim,spldep,spldis,splvol,sievsz,kurt,skew,meanpz,medipz,pctsat,pctsil,permty,porsty,dwf,cod
-1999/0001,30.0,72.0,1999,1,1,,UW,22BG,ArcticXP,50.0,5.5,01/01/1990 00:00:00,,11.0,,6.7,,1.1,,5.0,,9.8,,5.5,,17.0
-1999/0001,30.0,72.0,1999,1,1,,UW,22BG,ArcticXP,50.0,5.5,01/01/1990 00:00:00,12.2,,2.3,,26.7,,68.0,,2.7,,4.0,,45.2,
+survey_id,latitude,longitude,date,station_name,station_id,platform_name,max_sampling_depth,subdes,spldattim,spldep,spldis,splvol,sievsz,kurt,skew,meanpz,medipz,pctsat,pctsil,permty,porsty,dwf,cod
+1999/0001,30.0,72.0,1999-01-01,UW,22BG,ArcticXP,50.0,5.5,1990-01-01,,11.0,,6.7,,1.1,,5.0,,9.8,,5.5,,17.0
+1999/0001,30.0,72.0,1999-01-01,UW,22BG,ArcticXP,50.0,5.5,1990-01-01,12.2,,2.3,,26.7,,68.0,,2.7,,4.0,,45.2,

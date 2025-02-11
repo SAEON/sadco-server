@@ -1,26 +1,15 @@
-import time
-
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy import select, func
 from starlette.status import HTTP_404_NOT_FOUND
 
-from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
-                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData)
-
-from sadco.api.models import (HydroDownloadModel, HydroWaterPhysicalDownloadModel,
-                              HydroWaterNutrientAndChemistryDownloadModel, HydroWaterPollutionDownloadModel,
-                              HydroWaterChemistryDownloadModel, HydroSedimentPhysicalDownloadModel,
-                              HydroWaterNutrientsDownloadModel, HydroSedimentPollutionDownloadModel,
-                              HydroSedimentChemistryDownloadModel, HydroWeatherDownloadModel,
-                              HydroCurrentsDownloadModel, CurrentsDownloadModel, WeatherDownloadModel,
-                              WavesDownloadModel)
-
-from sadco.db import Session
-from sadco.api.lib.download import get_csv_data, get_table_data, audit_download_request
-from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
 from sadco.api.lib.auth import Authorize, Authorized
+from sadco.api.lib.download import get_csv_data, audit_download_request
+from sadco.const import SADCOScope, DataType, SurveyType as ConstSurveyType
+from sadco.db import Session
+from sadco.db.models import (Watphy, Survey, Station, Sedphy, Weather, Currents, CurMooring, CurDepth, CurData,
+                             Inventory, WetStation, WetPeriod, WavStation, WetData, WavData, CurWatphy, EDMInstrument2,
+                             Watnut, Watchem1, Watchl, Watpol1, Watpol2, Watchem2, Sedpol1, Sedpol2, Sedchem1, Sedchem2)
 
 router = APIRouter()
 
@@ -66,46 +55,36 @@ async def download_currents_survey_data(
 def get_currents_items(survey_id: str) -> list:
     stmt = (
         select(
-            CurMooring
-        ).where(CurMooring.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(CurMooring.cur_depths).
-            joinedload(CurDepth.cur_data_list).
-            joinedload(CurData.cur_watphy)
+            CurDepth.spldep.label("sampling_depth"),
+            EDMInstrument2.name.label("instrument"),
+            CurDepth.time_interval,
+            CurDepth.passkey,
+            CurDepth.parameters,
+            CurData.datetime,
+            CurData.speed,
+            CurData.direction,
+            CurData.temperature,
+            CurData.vert_velocity,
+            CurData.f_speed_9,
+            CurData.f_direction_9,
+            CurData.f_speed_14,
+            CurData.f_direction_14,
+            CurData.pressure,
+            CurWatphy.ph,
+            CurWatphy.salinity,
+            CurWatphy.dis_oxy.label("dissolved_oxygen")
         )
+        .join(CurMooring, CurDepth.mooring_code == CurMooring.code)
+        .join(CurData, CurDepth.code == CurData.depth_code)
+        .outerjoin(CurWatphy, CurData.code == CurWatphy.data_code)
+        .outerjoin(EDMInstrument2, CurDepth.instrument_number == EDMInstrument2.code)
+        .where(CurMooring.survey_id == survey_id.replace("-", "/"))
     )
 
-    start_time = time.time()
     if not (results := Session.execute(stmt).unique()):
         raise HTTPException(HTTP_404_NOT_FOUND)
-    print(f'Currents DB time: {time.time() - start_time}')
 
-    start_time = time.time()
-    current_list = [
-        CurrentsDownloadModel(
-            sampling_depth=cur_depth.spldep,
-            instrument=cur_depth.edm_instrument2.name,
-            time_interval=cur_depth.time_interval,
-            passkey=cur_depth.passkey,
-            parameters=cur_depth.parameters,
-            **get_table_data(
-                cur_data,
-                [
-                    'code',
-                    'depth_code'
-                ]
-            ),
-            ph=cur_data.cur_watphy.ph if cur_data.cur_watphy else None,
-            salinity=cur_data.cur_watphy.salinity if cur_data.cur_watphy else None,
-            dissolved_oxygen=cur_data.cur_watphy.dis_oxy if cur_data.cur_watphy else None,
-        ).dict()
-        for row in results
-        for cur_depth in row.CurMooring.cur_depths
-        for cur_data in cur_depth.cur_data_list
-    ]
-    print(f'Current build list time: {time.time() - start_time}')
-
-    return current_list
+    return results
 
 
 @router.get(
@@ -277,437 +256,330 @@ def get_hydro_data_type_items(data_type: str, survey_id: str) -> list:
 
 def get_water_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list)
+        select(
+            *get_hydro_water_fields()
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_physical_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_nutrients_and_chemistry_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watnut)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watchem1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watchl)
+        select(
+            *get_hydro_water_fields(),
+            Watnut.no2,
+            Watnut.no3,
+            Watnut.po4,
+            Watnut.ptot,
+            Watnut.sio3,
+            Watchem1.ph,
+            Watchl.chla
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .outerjoin(Watchl, Watphy.code == Watchl.watphy_code)
+        .outerjoin(Watnut, Watphy.code == Watnut.watphy_code)
+        .outerjoin(Watchem1, Watphy.code == Watchem1.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_nutrients_and_chemistry_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_pollution_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watpol1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watpol2)
+        select(
+            *get_hydro_water_fields(),
+            Watpol1.arsenic,
+            Watpol1.cadmium,
+            Watpol1.chromium,
+            Watpol1.cobalt,
+            Watpol1.copper,
+            Watpol1.iron,
+            Watpol1.lead,
+            Watpol1.manganese,
+            Watpol1.mercury,
+            Watpol1.nickel,
+            Watpol1.selenium,
+            Watpol1.zinc,
+            Watpol2.aluminium,
+            Watpol2.antimony,
+            Watpol2.bismuth,
+            Watpol2.molybdenum,
+            Watpol2.silver,
+            Watpol2.titanium,
+            Watpol2.vanadium
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .outerjoin(Watpol1, Watphy.code == Watpol1.watphy_code)
+        .outerjoin(Watpol2, Watphy.code == Watpol2.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_pollution_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_chemistry_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watchem1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watchem2)
+        select(
+            *get_hydro_water_fields(),
+            Watchem1.dic,
+            Watchem1.doc,
+            Watchem1.fluoride,
+            Watchem1.iodene,
+            Watchem1.iodate,
+            Watchem1.kjn,
+            Watchem1.nh3,
+            Watchem1.nitrogen,
+            Watchem1.oxa,
+            Watchem1.ph,
+            Watchem2.calcium,
+            Watchem2.cesium,
+            Watchem2.hydrocarbons,
+            Watchem2.magnesium,
+            Watchem2.pah,
+            Watchem2.potassium,
+            Watchem2.rubidium,
+            Watchem2.sodium,
+            Watchem2.strontium,
+            Watchem2.so4,
+            Watchem2.sussol
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .outerjoin(Watchem1, Watphy.code == Watchem1.watphy_code)
+        .outerjoin(Watchem2, Watphy.code == Watchem2.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
     if not (results := Session.execute(stmt).unique()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_water_chemistry_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_water_nutrients_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.watphy_list).
-            joinedload(Watphy.watnut)
+        select(
+            *get_hydro_water_fields(),
+            Watnut.no2,
+            Watnut.no3,
+            Watnut.p,
+            Watnut.po4,
+            Watnut.ptot,
+            Watnut.sio3,
+            Watnut.sio4,
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Watphy, Watphy.station_id == Station.station_id)
+        .join(Watnut, Watphy.code == Watnut.watphy_code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_nutrients_download_model(watphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for watphy in station.watphy_list
-    ]
+    return results
 
 
 def get_sediment_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.sedphy_list)
+        select(
+            *get_hydro_sediment_fields(),
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Sedphy, Sedphy.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_sediment_physical_download_model(sedphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for sedphy in station.sedphy_list
-    ]
+    return results
 
 
 def get_sediment_pollution_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.sedphy_list).
-            joinedload(Sedphy.sedpol1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.sedphy_list).
-            joinedload(Sedphy.sedpol2)
+        select(
+            *get_hydro_sediment_fields(),
+            Sedpol1.arsenic,
+            Sedpol1.cadmium,
+            Sedpol1.chromium,
+            Sedpol1.cobalt,
+            Sedpol1.copper,
+            Sedpol1.iron,
+            Sedpol1.lead,
+            Sedpol1.manganese,
+            Sedpol1.mercury,
+            Sedpol1.nickel,
+            Sedpol1.selenium,
+            Sedpol1.zinc,
+            Sedpol2.aluminium,
+            Sedpol2.antimony,
+            Sedpol2.bismuth,
+            Sedpol2.molybdenum,
+            Sedpol2.silver,
+            Sedpol2.titanium,
+            Sedpol2.vanadium
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Sedphy, Sedphy.station_id == Station.station_id)
+        .outerjoin(Sedpol1, Sedpol1.sedphy_code == Sedphy.code)
+        .outerjoin(Sedpol2, Sedpol2.sedphy_code == Sedphy.code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_sediment_pollution_download_model(sedphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for sedphy in station.sedphy_list
-    ]
+    return results
 
 
 def get_sediment_chemistry_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.sedphy_list).
-            joinedload(Sedphy.sedchem1)
-        ).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.sedphy_list).
-            joinedload(Sedphy.sedchem1)
+        select(
+            *get_hydro_sediment_fields(),
+            Sedchem1.fluoride,
+            Sedchem1.kjn,
+            Sedchem1.oxa,
+            Sedchem1.toc,
+            Sedchem1.ptot,
+            Sedchem2.calcium,
+            Sedchem2.magnesium,
+            Sedchem2.potassium,
+            Sedchem2.sodium,
+            Sedchem2.strontium,
+            Sedchem2.so3
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Sedphy, Sedphy.station_id == Station.station_id)
+        .outerjoin(Sedchem1, Sedchem1.sedphy_code == Sedphy.code)
+        .outerjoin(Sedchem2, Sedchem2.sedphy_code == Sedphy.code)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_sediment_chemistry_download_model(sedphy, station, row.Survey).dict()
-        for row in results
-        for station in row.Survey.stations
-        for sedphy in station.sedphy_list
-    ]
+    return results
 
 
 def get_hydro_weather_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.weather_list)
+        select(
+            *get_hydro_fields(),
+            Weather.nav_equip_type,
+            Weather.atmosph_pres,
+            Weather.surface_tmp,
+            Weather.drybulb,
+            Weather.wetbulb,
+            Weather.cloud,
+            Weather.vis_code,
+            Weather.weather_code,
+            Weather.water_color,
+            Weather.transparency,
+            Weather.wind_dir,
+            Weather.wind_speed,
+            Weather.swell_dir,
+            Weather.swell_height,
+            Weather.swell_period,
+            Weather.dupflag
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Weather, Weather.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
-    return [
-        get_hydro_weather_download_model(row.Survey, station, weather).dict()
-        for row in results
-        for station in row.Survey.stations
-        for weather in station.weather_list
-    ]
+    return results
 
 
 def get_hydro_currents_items(survey_id: str) -> list:
     stmt = (
-        select(Survey).where(Survey.survey_id == survey_id.replace('-', '/')).
-        options(
-            joinedload(Survey.stations).
-            joinedload(Station.currents)
+        select(
+            *get_hydro_fields(),
+            Currents.subdes,
+            Currents.spldattim,
+            Currents.spldep,
+            Currents.current_dir,
+            Currents.current_speed,
+            Currents.perc_good
         )
+        .join(Survey, Station.survey_id == Survey.survey_id)
+        .join(Currents, Currents.station_id == Station.station_id)
+        .where(Survey.survey_id == survey_id.replace('-', '/'))
     )
 
-    if not (results := Session.execute(stmt).unique()):
+    if not (results := Session.execute(stmt).unique().all()):
         raise HTTPException(HTTP_404_NOT_FOUND)
 
+    return results
+
+
+def get_hydro_water_fields() -> list:
     return [
-        get_hydro_currents_download_model(row.Survey, station, currents).dict()
-        for row in results
-        for station in row.Survey.stations
-        for currents in station.currents
+        *get_hydro_fields(),
+        Watphy.subdes,
+        Watphy.spldattim,
+        Watphy.spldep,
+        Watphy.filtered,
+        Watphy.disoxygen,
+        Watphy.salinity,
+        Watphy.temperature,
+        Watphy.sound_flag,
+        Watphy.soundv,
+        Watphy.turbidity,
+        Watphy.pressure,
+        Watphy.fluorescence,
     ]
 
 
-def get_hydro_weather_download_model(
-        survey: Survey,
-        station: Station,
-        weather: Weather
-) -> HydroWeatherDownloadModel:
-    return HydroWeatherDownloadModel(
-        **get_hydro_download_model(station, survey).dict(),
-        **get_table_data(
-            weather,
-            fields_to_ignore=[
-                'station_id'
-            ]
-        )
-    )
+def get_hydro_sediment_fields() -> list:
+    return [
+        *get_hydro_fields(),
+        Sedphy.subdes,
+        Sedphy.spldattim,
+        Sedphy.spldep,
+        Sedphy.spldis,
+        Sedphy.splvol,
+        Sedphy.sievsz,
+        Sedphy.kurt,
+        Sedphy.skew,
+        Sedphy.meanpz,
+        Sedphy.medipz,
+        Sedphy.pctsat,
+        Sedphy.pctsil,
+        Sedphy.permty,
+        Sedphy.porsty,
+        Sedphy.dwf,
+        Sedphy.cod
+    ]
 
 
-def get_hydro_water_chemistry_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterChemistryDownloadModel:
-    return HydroWaterChemistryDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(
-            watphy.watchem1,
-            fields_to_ignore=[
-                'watphy_code'
-            ]
-        ),
-        **get_table_data(
-            watphy.watchem2,
-            fields_to_ignore=[
-                'watphy_code'
-            ]
-        )
-    )
-
-
-def get_hydro_nutrients_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterNutrientsDownloadModel:
-    return HydroWaterNutrientsDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(watphy.watnut)
-    )
-
-
-def get_hydro_water_pollution_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterPollutionDownloadModel:
-    return HydroWaterPollutionDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        **get_table_data(
-            watphy.watpol1,
-            fields_to_ignore=[
-                'watphy_code'
-            ]
-        ),
-        **get_table_data(
-            watphy.watpol2,
-            fields_to_ignore=[
-                'watphy_code'
-            ]
-        )
-    )
-
-
-def get_hydro_water_nutrients_and_chemistry_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterNutrientAndChemistryDownloadModel:
-    return HydroWaterNutrientAndChemistryDownloadModel(
-        **get_hydro_water_physical_download_model(watphy, station, survey).dict(),
-        no2=watphy.watnut.no2 if watphy.watnut else None,
-        no3=watphy.watnut.no3 if watphy.watnut else None,
-        po4=watphy.watnut.po4 if watphy.watnut else None,
-        ptot=watphy.watnut.ptot if watphy.watnut else None,
-        sio3=watphy.watnut.sio3 if watphy.watnut else None,
-        ph=watphy.watchem1.ph if watphy.watchem1 else None,
-        chla=watphy.watchl.chla if watphy.watchl else None,
-    )
-
-
-def get_hydro_water_physical_download_model(
-        watphy: Watphy,
-        station: Station,
-        survey: Survey
-) -> HydroWaterPhysicalDownloadModel:
-    return HydroWaterPhysicalDownloadModel(
-        **(get_hydro_download_model(station, survey).dict()),
-        **get_table_data(
-            watphy,
-            fields_to_ignore=[
-                'station_id',
-                'spldattim'
-            ]
-        ),
-        spldattim=watphy.spldattim.strftime("%m/%d/%Y %H:%M:%S") if watphy.spldattim else '',
-    )
-
-
-def get_hydro_sediment_physical_download_model(
-        sedphy: Sedphy,
-        station: Station,
-        survey: Survey
-) -> HydroSedimentPhysicalDownloadModel:
-    return HydroSedimentPhysicalDownloadModel(
-        **(get_hydro_download_model(station, survey).dict()),
-        **get_table_data(
-            sedphy,
-            fields_to_ignore=[
-                'station_id',
-                'spldattim'
-            ]
-        ),
-        spldattim=sedphy.spldattim.strftime("%m/%d/%Y %H:%M:%S") if sedphy.spldattim else ''
-    )
-
-
-def get_hydro_sediment_pollution_download_model(
-        sedphy: Sedphy,
-        station: Station,
-        survey: Survey
-) -> HydroSedimentPollutionDownloadModel:
-    return HydroSedimentPollutionDownloadModel(
-        **(get_hydro_sediment_physical_download_model(sedphy, station, survey).dict()),
-        **get_table_data(
-            sedphy.sedpol1,
-            fields_to_ignore=[
-                'sedphy_code'
-            ]
-        ),
-        **get_table_data(
-            sedphy.sedpol2,
-            fields_to_ignore=[
-                'sedphy_code'
-            ]
-        )
-    )
-
-
-def get_hydro_sediment_chemistry_download_model(
-        sedphy: Sedphy,
-        station: Station,
-        survey: Survey
-) -> HydroSedimentChemistryDownloadModel:
-    return HydroSedimentChemistryDownloadModel(
-        **(get_hydro_sediment_physical_download_model(sedphy, station, survey).dict()),
-        **get_table_data(
-            sedphy.sedchem1,
-            fields_to_ignore=[
-                'sedphy_code'
-            ]
-        ),
-        **get_table_data(
-            sedphy.sedchem2,
-            fields_to_ignore=[
-                'sedphy_code'
-            ]
-        ),
-    )
-
-
-def get_hydro_currents_download_model(
-        survey: Survey,
-        station: Station,
-        currents: Currents
-) -> HydroCurrentsDownloadModel:
-    return HydroCurrentsDownloadModel(
-        **(get_hydro_download_model(station, survey).dict()),
-        **get_table_data(
-            currents,
-            fields_to_ignore=[
-                'station_id',
-                'spldattim'
-            ]
-        ),
-        spldattim=currents.spldattim.strftime("%m/%d/%Y %H:%M:%S") if currents.spldattim else ''
-    )
-
-
-def get_hydro_download_model(station: Station, survey: Survey) -> HydroDownloadModel:
-    return HydroDownloadModel(
-        survey_id=station.survey_id,
-        latitude=station.latitude,
-        longitude=station.longitude,
-        year=station.date_start.year,
-        month=station.date_start.month,
-        day=station.date_start.day,
-        time='',
-        station_name=station.stnnam,
-        station_id=station.station_id,
-        platform_name=survey.planam,
-        max_sampling_depth=station.max_spldep,
-    )
+def get_hydro_fields() -> list:
+    return [
+        Station.survey_id,
+        Station.latitude,
+        Station.longitude,
+        func.date(Station.date_start).label('date'),
+        Station.stnnam.label('station_name'),
+        Station.station_id,
+        Survey.planam.label('platform_name'),
+        Station.max_spldep.label('max_sampling_depth'),
+    ]
