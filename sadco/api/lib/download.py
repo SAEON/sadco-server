@@ -71,7 +71,7 @@ def audit_download_request(auth: Authorized, file_info: dict, survey_type: str, 
         client_id=auth.client_id,
         user_id=auth.user_id,
         survey_type=survey_type,
-        parameters=json.dumps(request_params),
+        parameters=json.dumps(request_params, default=str, indent=2),
         download_file_size=file_info.get('size'),
         download_file_checksum=file_info.get('checksum')
     ).save()
