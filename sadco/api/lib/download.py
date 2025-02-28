@@ -1,13 +1,14 @@
-from fastapi.responses import StreamingResponse
-from fastapi import Request
+import hashlib
+import json
+import zipfile
 from datetime import datetime, timezone
 from io import StringIO, BytesIO
+
+import pandas as pd
+from fastapi.responses import StreamingResponse
+
 from sadco.api.lib.auth import Authorized
 from sadco.db.models import DownloadAudit
-import pandas as pd
-import hashlib
-import zipfile
-import json
 
 
 def get_csv_data(items, survey_id, data_variant) -> dict:
