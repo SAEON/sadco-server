@@ -1,10 +1,12 @@
 import os
 import zipfile
+from datetime import date
+
 import pytest
 import pandas as pd
 import io
 
-from sadco.db.models import VosMain, VosMain2, VosMain68, VosArch, VosArch2
+from sadco.db.models import VosMain, VosMain2, VosMain68, VosArch, VosArch2, vos
 from test.factories import (SurveyFactory, StationFactory, WatphyFactory, Watchem1Factory, Watchem2Factory,
                             Watpol1Factory, Watpol2Factory, WatnutFactory, InventoryFactory, WatchlFactory,
                             CurrentsFactory, WeatherFactory,
@@ -668,11 +670,13 @@ def set_wav_data(wav_station):
 
 @pytest.fixture
 def vos_data():
-    geographical_bounds = dict(
+    bounds = dict(
         north_bound=-30,
         south_bound=-40,
         east_bound=-5,
         west_bound=-15,
+        start_date=date(1997, 1, 1),
+        end_date=date(1999, 1, 1),
     )
 
     vos_data = dict(
@@ -720,7 +724,7 @@ def vos_data():
     TestSession.add(VosArch2(**vos_data))
     TestSession.commit()
 
-    return geographical_bounds
+    return bounds
 
 
 @pytest.mark.require_scope(SADCOScope.HYDRO_DOWNLOAD)
@@ -838,6 +842,58 @@ def test_download_vos_data(api, vos_data, scopes):
         assert_forbidden(r)
     else:
         assert_download_result(r, 'survey', 'VOS')
+
+
+@pytest.fixture(params=['temporal_extent', 'geographical_extent'])
+def download_vos_data(api, request, vos_data):
+    download_params = {}
+
+    match request.param:
+        case 'temporal_extent':
+            download_params = {
+                'start_date': vos_data['start_date'],
+                'end_date': vos_data['end_date']
+            }
+        case 'geographical_extent':
+            download_params = {
+                'north_bound': vos_data['north_bound'],
+                'south_bound': vos_data['south_bound'],
+                'east_bound': vos_data['east_bound'],
+                'west_bound': vos_data['west_bound']
+            }
+
+    route = '/vos_survey/download/'
+
+    api([SADCOScope.VOS_DOWNLOAD]).get(
+        route,
+        params=download_params
+    )
+
+    return download_params
+
+
+@pytest.mark.require_scope(SADCOScope.DOWNLOAD_READ)
+def test_download_vos_audit(api, scopes, download_vos_data):
+    authorized = SADCOScope.DOWNLOAD_READ in scopes
+
+    download_params = download_vos_data
+
+    route = '/downloads/my_downloads/'
+
+    r = api(scopes).get(
+        route
+    )
+
+    if not authorized:
+        assert_forbidden(r)
+    else:
+        for item in r.json()['items']:
+            download_audit_params = item['parameters']
+            for key, value in download_vos_data.items():
+                if key in download_audit_params:
+                    assert download_params[key] == value
+                else:
+                    assert not value
 
 
 def assert_download_result(response, compare_file_name, file_unique_name: str = TEST_SURVEY_ID.replace('/', '-')):
